@@ -1,0 +1,31 @@
+[package]
+name = "egui_skia"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+winit = ["dep:egui-winit"]
+
+[profile.dev]
+opt-level = 3
+
+[dependencies]
+
+egui = { git = "https://github.com/budde25/egui", branch = "bump-winit"  }
+skia-safe = { version = "0.53", features = ["gl", "metal"] }
+foreign-types-shared = "0.1.1"
+egui-winit = { default-features = false, git = "https://github.com/budde25/egui", branch = "bump-winit", optional = true  }
+
+# only on mac
+[target.'cfg(target_os = "macos")'.dependencies]
+metal = "0.24"
+cocoa = "0.24"
+core-graphics-types = "0.1"
+objc = "0.2"
+
+[dev-dependencies]
+softbuffer = { path = "../github/softbuffer" }
+egui_demo_lib = { git = "https://github.com/budde25/egui", branch = "bump-winit" }
+raw-window-handle = "0.5"
