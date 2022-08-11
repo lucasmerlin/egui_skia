@@ -1,12 +1,12 @@
+use std::ops::Deref;
+use std::sync::Arc;
 use egui::{ClippedPrimitive, ImageData, Shape, TextureId, TexturesDelta};
 use egui::epaint::ahash::AHashMap;
 use egui::epaint::Primitive;
-use skia_safe::{
-    Bitmap, BlendMode, ClipOp, Color, Data, Image, ImageInfo, IRect, Paint, Point, Rect, scalar,
-    Size, Surface, Vertices,
-};
+use skia_safe::{Bitmap, BlendMode, Canvas, ClipOp, Color, ConditionallySend, Data, Drawable, Image, ImageInfo, IRect, Paint, PictureRecorder, Point, Rect, scalar, Sendable, Size, Surface, Vertices};
 use skia_safe::image::BitDepth;
 use skia_safe::vertices::{Builder, BuilderFlags, VertexMode};
+use skia_safe::wrapper::NativeTransmutableWrapper;
 
 struct PaintHandle {
     paint: Paint,
@@ -31,10 +31,6 @@ impl Painter {
         primitives: Vec<ClippedPrimitive>,
         textures_delta: TexturesDelta,
     ) {
-        let canvas = surface.canvas();
-
-        canvas.set_matrix(&skia_safe::M44::new_identity().set_scale(dpi, dpi, 1.0));
-
         textures_delta.set.iter().for_each(|(id, image)| {
             let delta_image = match &image.image {
                 ImageData::Color(color_image) => Image::from_raster_data(
@@ -130,9 +126,18 @@ impl Painter {
         });
 
         for primitive in primitives {
-            let mut arc = skia_safe::AutoCanvasRestore::guard(canvas, true);
+            let skclip_rect = Rect::new(
+                primitive.clip_rect.min.x,
+                primitive.clip_rect.min.y,
+                primitive.clip_rect.max.x,
+                primitive.clip_rect.max.y,
+            );
             match primitive.primitive {
                 Primitive::Mesh(mesh) => {
+                    let canvas = surface.canvas();
+                    canvas.set_matrix(&skia_safe::M44::new_identity().set_scale(dpi, dpi, 1.0));
+                    let mut arc = skia_safe::AutoCanvasRestore::guard(canvas, true);
+
                     for mut mesh in mesh.split_to_u16() {
                         let texture_id = mesh.texture_id;
 
@@ -188,12 +193,6 @@ impl Painter {
                                     .as_slice(),
                             ),
                         );
-                        let skclip_rect = Rect::new(
-                            primitive.clip_rect.min.x,
-                            primitive.clip_rect.min.y,
-                            primitive.clip_rect.max.x,
-                            primitive.clip_rect.max.y,
-                        );
 
                         arc.clip_rect(skclip_rect, ClipOp::default(), true);
                         arc.draw_vertices(
@@ -203,8 +202,27 @@ impl Painter {
                         );
                     }
                 }
-                Primitive::Callback(_) => {
-                    todo!()
+                Primitive::Callback(data) => {
+                    let callback: Arc<EguiSkiaPaintCallback> = data.callback.downcast().unwrap();
+                    let rect = data.rect;
+
+                    let skia_rect = Rect::new(
+                        rect.min.x,
+                        rect.min.y,
+                        rect.max.x,
+                        rect.max.y,
+                    );
+
+                    let mut drawable: Drawable = callback.callback.deref()(skia_rect).0.unwrap();
+
+                    let canvas = surface.canvas();
+
+                    let mut arc = skia_safe::AutoCanvasRestore::guard(canvas, true);
+
+                    arc.clip_rect(skclip_rect, ClipOp::default(), true);
+                    arc.translate((rect.min.x, rect.min.y));
+
+                    drawable.draw(&mut arc, None);
                 }
             }
         }
@@ -214,3 +232,25 @@ impl Painter {
         });
     }
 }
+
+
+pub struct EguiSkiaPaintCallback {
+    callback: Box<dyn Fn(Rect) -> SyncSendableDrawable + Send + Sync>,
+}
+
+impl EguiSkiaPaintCallback {
+    pub fn new<F: Fn(&mut Canvas) + Send + Sync + 'static>(callback: F) -> EguiSkiaPaintCallback {
+        EguiSkiaPaintCallback {
+            callback: Box::new(move |rect| {
+                let mut pr = PictureRecorder::new();
+                let mut canvas = pr.begin_recording(rect, None);
+                callback(&mut canvas);
+                SyncSendableDrawable(pr.finish_recording_as_drawable().unwrap().wrap_send().unwrap())
+            }),
+        }
+    }
+}
+
+struct SyncSendableDrawable(pub Sendable<Drawable>);
+
+unsafe impl Sync for SyncSendableDrawable {}

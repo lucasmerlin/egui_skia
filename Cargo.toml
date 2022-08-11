@@ -14,7 +14,7 @@ opt-level = 3
 [dependencies]
 
 egui = { git = "https://github.com/budde25/egui", branch = "bump-winit"  }
-skia-safe = { version = "0.53", features = ["gl", "metal"] }
+skia-safe = { version = "0.53", features = [] }
 foreign-types-shared = "0.1.1"
 egui-winit = { default-features = false, git = "https://github.com/budde25/egui", branch = "bump-winit", optional = true  }
 

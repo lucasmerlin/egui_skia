@@ -1,9 +1,11 @@
-use egui::Context;
+use egui::{Context, ScrollArea};
 use raw_window_handle::HasRawWindowHandle;
 use skia_safe::canvas::SrcRectConstraint;
-use skia_safe::{AlphaType, ColorSpace, ColorType, EncodedImageFormat, ImageInfo, Paint, Surface};
+use skia_safe::{AlphaType, ColorSpace, ColorType, EncodedImageFormat, ImageInfo, Paint, Point, Surface};
 use std::fs::File;
 use std::io::Write;
+use std::sync::Arc;
+use egui_skia::EguiSkiaPaintCallback;
 
 #[cfg(feature = "winit")]
 fn run_software(mut ui: impl FnMut(&Context) + 'static) {
@@ -106,6 +108,24 @@ fn main() {
         });
 
         demos.ui(ctx);
+        egui::Window::new("Draw to skia")
+            .show(ctx, |ui| {
+                ScrollArea::horizontal()
+                    .show(ui, |ui| {
+                        let (rect, _) =
+                            ui.allocate_exact_size(egui::Vec2::splat(300.0), egui::Sense::drag());
+                        ui.painter().add(egui::PaintCallback {
+                            rect: rect.clone(),
+                            callback: Arc::new(EguiSkiaPaintCallback::new(move |canvas| {
+                                canvas.draw_circle(
+                                    Point::new(150.0, 150.0),
+                                    150.0,
+                                    &Paint::default(),
+                                );
+                            }))
+                        })
+                    });
+            });
     });
 }
 

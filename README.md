@@ -1,12 +1,18 @@
 # Skia backend for egui
 
 This is a drawing backend for [egui](https://github.com/emilk/egui) that uses [skia-safe](https://crates.io/crates/skia-safe).
-It uses egui_winit for input handling.
 
 ## Usage
-```rust
 
-// Follow one of the examples in the skia-safe repo to create a skia context and surface.
-// 
+Have a look at the metal or cpu examples to get started.
 
+## Run the examples
+
+```bash
+cargo run --example metal --features winit,skia-safe/metal
+cargo run --example cpu --features winit
 ```
+
+## Status
+Rendering on the gpu works great, only the dancing strings example doesn't work for some reason.
+Rendering on the cpu doesn't look correct yet, I'm not sure why.

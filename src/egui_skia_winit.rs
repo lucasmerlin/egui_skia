@@ -5,7 +5,6 @@ use egui::{Context, PaintCallbackInfo};
 pub use egui_winit;
 use egui_winit::winit::event_loop::EventLoopWindowTarget;
 use egui_winit::winit::window::Window;
-use objc::sel;
 use skia_safe::Surface;
 
 use crate::EguiSkia;

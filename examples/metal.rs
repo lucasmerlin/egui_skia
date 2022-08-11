@@ -1,9 +1,8 @@
-use egui_skia::{EguiSkia, EguiSkiaWinit};
+use egui_skia::{EguiSkia, EguiSkiaPaintCallback, EguiSkiaWinit};
 use metal::{Device, MTLPixelFormat, MetalLayer};
-use skia_safe::{
-    scalar, Canvas, Color4f, ColorSpace, ColorType, Paint, Point, Rect, Size, Surface,
-};
+use skia_safe::{scalar, Canvas, Color4f, ColorSpace, ColorType, Paint, Point, Rect, Size, Surface, ConditionallySend, PictureRecorder, Font, Color};
 use std::sync::Arc;
+use egui::ScrollArea;
 
 #[cfg(feature = "winit")]
 fn main() {
@@ -79,6 +78,32 @@ fn main() {
 
             let repaint_after = gui.run(&window, |egui_ctx| {
                 demo.ui(egui_ctx);
+                egui::Window::new("Draw to skia")
+                    .show(egui_ctx, |ui| {
+                        ScrollArea::horizontal()
+                            .show(ui, |ui| {
+                                let (rect, _) =
+                                    ui.allocate_exact_size(egui::Vec2::splat(300.0), egui::Sense::drag());
+                                ui.painter().add(egui::PaintCallback {
+                                    rect: rect.clone(),
+                                    callback: Arc::new(EguiSkiaPaintCallback::new(move |canvas| {
+                                        canvas.draw_circle(
+                                            Point::new(150.0, 150.0),
+                                            150.0,
+                                            &Paint::default(),
+                                        );
+                                        let mut paint = Paint::default();
+                                        paint.set_color(Color::from_argb(255, 255, 255, 255));
+                                        canvas.draw_str(
+                                            "Hello Skia!",
+                                            Point::new(100.0, 150.0),
+                                            &Font::default().with_size(20.0).unwrap(),
+                                            &paint,
+                                        );
+                                    }))
+                                })
+                            });
+                    });
             });
 
             *control_flow = if quit {
