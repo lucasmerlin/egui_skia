@@ -16,3 +16,7 @@ cargo run --example cpu --features winit
 ## Status
 Rendering on the gpu works great, only the dancing strings example doesn't work for some reason.
 Rendering on the cpu doesn't look correct yet, I'm not sure why.
+
+## Preview:
+
+https://user-images.githubusercontent.com/8009393/184211263-13d1f2d5-0125-4187-98a6-e95f003e7e75.mov
