@@ -1,6 +1,6 @@
 use egui_skia::{EguiSkia, EguiSkiaPaintCallback, EguiSkiaWinit};
 use metal::{Device, MTLPixelFormat, MetalLayer};
-use skia_safe::{scalar, Canvas, Color4f, ColorSpace, ColorType, Paint, Point, Rect, Size, Surface, ConditionallySend, PictureRecorder, Font, Color};
+use skia_safe::{scalar, Canvas, Color4f, ColorSpace, ColorType, Paint, Point, Rect, Size, Surface, ConditionallySend, PictureRecorder, Font, Color, PathEffect};
 use std::sync::Arc;
 use egui::ScrollArea;
 
@@ -29,7 +29,7 @@ fn main() {
 
     let window = WindowBuilder::new()
         .with_inner_size(size)
-        .with_title("Skia Metal Winit Example".to_string())
+        .with_title("Egui Skia Metal Winit Example".to_string())
         .build(&events_loop)
         .unwrap();
 
@@ -70,11 +70,14 @@ fn main() {
 
     let mut demo = egui_demo_lib::DemoWindows::default();
 
+    let mut frame = 0;
+
     events_loop.run(move |event, _, control_flow| {
         autoreleasepool(|| {
             *control_flow = ControlFlow::Wait;
 
             let mut quit = false;
+            frame += 1;
 
             let repaint_after = gui.run(&window, |egui_ctx| {
                 demo.ui(egui_ctx);
@@ -84,14 +87,16 @@ fn main() {
                             .show(ui, |ui| {
                                 let (rect, _) =
                                     ui.allocate_exact_size(egui::Vec2::splat(300.0), egui::Sense::drag());
+                                egui_ctx.request_repaint();
+                                let si = (frame as f32 / 120.0).sin();
+                                let frame = frame.clone();
+
                                 ui.painter().add(egui::PaintCallback {
                                     rect: rect.clone(),
                                     callback: Arc::new(EguiSkiaPaintCallback::new(move |canvas| {
-                                        canvas.draw_circle(
-                                            Point::new(150.0, 150.0),
-                                            150.0,
-                                            &Paint::default(),
-                                        );
+                                        let center = Point::new(150.0, 150.0);
+                                        canvas.save();
+                                        canvas.rotate(si * 5.0, Some(center));
                                         let mut paint = Paint::default();
                                         paint.set_color(Color::from_argb(255, 255, 255, 255));
                                         canvas.draw_str(
@@ -99,6 +104,17 @@ fn main() {
                                             Point::new(100.0, 150.0),
                                             &Font::default().with_size(20.0).unwrap(),
                                             &paint,
+                                        );
+
+                                        let mut circle_paint = Paint::default();
+                                        circle_paint.set_path_effect(PathEffect::dash(&[si * 5.0 + 20.0, si * 5.0 + 20.0], 1.0));
+                                        circle_paint.set_style(skia_safe::PaintStyle::Stroke);
+                                        circle_paint.set_stroke_width(10.0);
+                                        circle_paint.set_stroke_cap(skia_safe::PaintCap::Round);
+                                        canvas.draw_circle(
+                                            center,
+                                            100.0,
+                                            &circle_paint,
                                         );
                                     }))
                                 })
