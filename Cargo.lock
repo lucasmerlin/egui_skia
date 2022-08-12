@@ -1387,6 +1387,7 @@ dependencies = [
 [[package]]
 name = "softbuffer"
 version = "0.1.1"
+source = "git+https://github.com/lucasmerlin/softbuffer#2024cf3d38a32ceba022c45b171abb1c5e5e168a"
 dependencies = [
  "cocoa",
  "core-graphics",
