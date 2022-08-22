@@ -1,12 +1,11 @@
 use std::ops::Deref;
 use std::sync::Arc;
-use egui::{ClippedPrimitive, ImageData, Shape, TextureId, TexturesDelta};
+
+use egui::{ClippedPrimitive, ImageData, TextureId, TexturesDelta};
 use egui::epaint::ahash::AHashMap;
 use egui::epaint::Primitive;
-use skia_safe::{Bitmap, BlendMode, Canvas, ClipOp, Color, ConditionallySend, Data, Drawable, Image, ImageInfo, IRect, Paint, PictureRecorder, Point, Rect, scalar, Sendable, Size, Surface, Vertices};
-use skia_safe::image::BitDepth;
+use skia_safe::{BlendMode, Canvas, ClipOp, Color, ConditionallySend, Data, Drawable, Image, ImageInfo, Paint, PictureRecorder, Point, Rect, scalar, Sendable, Surface, Vertices};
 use skia_safe::vertices::{Builder, BuilderFlags, VertexMode};
-use skia_safe::wrapper::NativeTransmutableWrapper;
 
 struct PaintHandle {
     paint: Paint,
@@ -138,7 +137,7 @@ impl Painter {
                     canvas.set_matrix(&skia_safe::M44::new_identity().set_scale(dpi, dpi, 1.0));
                     let mut arc = skia_safe::AutoCanvasRestore::guard(canvas, true);
 
-                    for mut mesh in mesh.split_to_u16() {
+                    for mesh in mesh.split_to_u16() {
                         let texture_id = mesh.texture_id;
 
                         let mut pos = Vec::with_capacity(mesh.vertices.len());

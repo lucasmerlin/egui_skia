@@ -1,6 +1,6 @@
 use crate::painter::Painter;
-use egui::{Context, PaintCallbackInfo, Pos2};
-use skia_safe::{Size, Surface};
+use egui::{Context, Pos2};
+use skia_safe::{Surface};
 use std::time::Duration;
 
 pub struct RasterizeOptions {

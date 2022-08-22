@@ -1,8 +1,10 @@
-use egui_skia::{EguiSkia, EguiSkiaPaintCallback, EguiSkiaWinit};
-use metal::{Device, MTLPixelFormat, MetalLayer};
-use skia_safe::{scalar, Canvas, Color4f, ColorSpace, ColorType, Paint, Point, Rect, Size, Surface, ConditionallySend, PictureRecorder, Font, Color, PathEffect};
 use std::sync::Arc;
+
 use egui::ScrollArea;
+use metal::{Device, MetalLayer, MTLPixelFormat};
+use skia_safe::{Color, ColorType, Font, Paint, PathEffect, Point, scalar, Size, Surface};
+
+use egui_skia::{EguiSkiaPaintCallback, EguiSkiaWinit};
 
 #[cfg(feature = "winit")]
 fn main() {
@@ -116,7 +118,7 @@ fn main() {
                                             100.0,
                                             &circle_paint,
                                         );
-                                    }))
+                                    })),
                                 })
                             });
                     });
@@ -128,7 +130,7 @@ fn main() {
                 window.request_redraw();
                 ControlFlow::Poll
             } else if let Some(repaint_after_instant) =
-                std::time::Instant::now().checked_add(repaint_after)
+            std::time::Instant::now().checked_add(repaint_after)
             {
                 ControlFlow::WaitUntil(repaint_after_instant)
             } else {
@@ -186,7 +188,7 @@ fn main() {
                                 None,
                                 None,
                             )
-                            .unwrap()
+                                .unwrap()
                         };
 
                         surface.canvas().clear(skia_safe::colors::TRANSPARENT);

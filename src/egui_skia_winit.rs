@@ -1,7 +1,7 @@
-use std::ops::Deref;
+
 use std::time::Duration;
 
-use egui::{Context, PaintCallbackInfo};
+use egui::{Context};
 pub use egui_winit;
 use egui_winit::winit::event_loop::EventLoopWindowTarget;
 use egui_winit::winit::window::Window;
@@ -16,7 +16,7 @@ pub struct EguiSkiaWinit {
 
 impl EguiSkiaWinit {
     pub fn new<T>(el: &EventLoopWindowTarget<T>) -> Self {
-        let mut egui_winit = egui_winit::State::new(el);
+        let egui_winit = egui_winit::State::new(el);
 
         Self {
             egui_winit,

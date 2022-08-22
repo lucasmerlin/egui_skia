@@ -1,5 +1,5 @@
 use egui_skia::rasterize;
-use skia_safe::{EncodedImageFormat, Paint, Point, Surface};
+use skia_safe::{EncodedImageFormat, Paint, Point};
 use std::fs::File;
 use std::io::Write;
 
