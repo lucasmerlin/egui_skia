@@ -13,16 +13,16 @@ opt-level = 3
 
 [dependencies]
 
-egui = { git = "https://github.com/budde25/egui", branch = "bump-winit"  }
-skia-safe = { version = "0.53", features = [] }
-foreign-types-shared = "0.1.1"
-egui-winit = { default-features = false, git = "https://github.com/budde25/egui", branch = "bump-winit", optional = true  }
+egui = "0.19"
+skia-safe = { version = "^0.53", features = [] }
+egui-winit = { version = "0.19", optional = true }
 
 
 [dev-dependencies]
 softbuffer = { git = "https://github.com/lucasmerlin/softbuffer" }
-egui_demo_lib = { git = "https://github.com/budde25/egui", branch = "bump-winit" }
+egui_demo_lib = "0.19"
 raw-window-handle = "0.5"
+foreign-types-shared = "0.1.1"
 
 
 [target.'cfg(target_os = "macos")'.dev-dependencies]
