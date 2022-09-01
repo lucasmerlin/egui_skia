@@ -6,7 +6,6 @@ use egui::epaint::ahash::AHashMap;
 use egui::epaint::{Mesh16, Primitive};
 use skia_safe::{BlendMode, Canvas, ClipOp, Color, ConditionallySend, Data, Drawable, Image, ImageInfo, Paint, PictureRecorder, Point, Rect, scalar, Sendable, Surface, Vertices};
 use skia_safe::vertices::{VertexMode};
-use skia_safe::wrapper::ValueWrapper;
 
 #[derive(Eq, PartialEq)]
 enum PaintType {
@@ -170,7 +169,7 @@ impl Painter {
                         let mut texs = Vec::with_capacity(mesh.vertices.len());
                         let mut colors = Vec::with_capacity(mesh.vertices.len());
 
-                        mesh.vertices.iter().enumerate().for_each(|(i, v)| {
+                        mesh.vertices.iter().for_each(|v| {
                             pos.push(Point::new(v.pos.x, v.pos.y));
                             texs.push(Point::new(v.uv.x, v.uv.y));
                             colors.push(Color::from_argb(
@@ -288,37 +287,48 @@ impl Painter {
         let mut is_zero = None;
 
         let mut meshes = Vec::new();
-        meshes.push(Mesh16 {
-            indices: vec![],
-            vertices: vec![],
-            texture_id: mesh.texture_id
-        });
 
-        for index in mesh.indices.iter() {
+        let mut start = 0;
+        let mut min = u16::MAX;
+        let mut max = 0;
+
+        let mut finish = |min, max, start, end| {
+            let mesh16 = Mesh16 {
+                indices: mesh.indices[start..end]
+                    .iter().map(|i| u16::try_from(i - min).unwrap()).collect(),
+                vertices: mesh.vertices[((min as usize)..=(max as usize))].to_vec(),
+                texture_id: mesh.texture_id
+            };
+
+            meshes.push(mesh16);
+        };
+
+
+        for (i, index) in mesh.indices.iter().enumerate() {
             let vertex = mesh.vertices.get(*index as usize).unwrap();
-            let is_current_zero = (vertex.uv.x == 0.0 && vertex.uv.y == 0.0);
+            let is_current_zero = vertex.uv.x == 0.0 && vertex.uv.y == 0.0;
             if is_current_zero != is_zero.unwrap_or(is_current_zero) {
-                meshes.push(Mesh16 {
-                    indices: vec![],
-                    vertices: vec![],
-                    texture_id: mesh.texture_id
-                });
+                finish(min, max, start, i - 1);
+
+                min = u16::MAX;
+                max = 0;
+                start = i;
+
                 is_zero = Some(is_current_zero)
             }
             if is_zero.is_none() {
                 is_zero = Some(is_current_zero)
             }
-            let last = meshes.last_mut().unwrap();
 
-            let index = if let Some(index) = last.vertices.iter().rposition(|v| v == vertex) {
-                index
-            } else {
-                last.vertices.push(vertex.clone());
-                last.vertices.len() - 1
-            };
-
-            last.indices.push(index as u16);
+            if *index < min {
+                min = *index;
+            }
+            if *index > max {
+                max = *index;
+            }
         }
+
+        finish(min, max, start, mesh.indices.len() - 1);
 
         meshes
     }
