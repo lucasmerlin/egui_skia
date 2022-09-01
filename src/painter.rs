@@ -309,8 +309,15 @@ impl Painter {
                 is_zero = Some(is_current_zero)
             }
             let last = meshes.last_mut().unwrap();
-            last.vertices.push(vertex.clone());
-            last.indices.push(last.indices.len() as u16);
+
+            let index = if let Some(index) = last.vertices.iter().rposition(|v| v == vertex) {
+                index
+            } else {
+                last.vertices.push(vertex.clone());
+                last.vertices.len() - 1
+            };
+
+            last.indices.push(index as u16);
         }
 
         meshes
