@@ -1,10 +1,8 @@
-use egui::{Context, ScrollArea};
-use raw_window_handle::HasRawWindowHandle;
-use skia_safe::canvas::SrcRectConstraint;
-use skia_safe::{AlphaType, ColorSpace, ColorType, EncodedImageFormat, ImageInfo, Paint, Point, Surface};
-use std::fs::File;
-use std::io::Write;
 use std::sync::Arc;
+
+use egui::{Context, ScrollArea};
+use skia_safe::{Paint, Point, Surface};
+
 use egui_skia::EguiSkiaPaintCallback;
 
 #[cfg(feature = "winit")]
@@ -85,8 +83,17 @@ fn run_software(mut ui: impl FnMut(&Context) + 'static) {
                 let peek = snapshot.peek_pixels().unwrap();
                 let pixels: &[u32] = peek.pixels().unwrap();
 
+
+                // No idea why R and B have to be swapped
+                let transformed = (pixels.iter().map(|x|
+                                                             (x & 0xFF000000) |
+                                                             ((x & 0x00FF0000) >>  16) |
+                                                             (x & 0x0000FF00) |
+                                                             ((x & 0x000000FF) << 16)
+                ).collect::<Vec<u32>>());
+
                 gc.set_buffer(
-                    pixels,
+                    &transformed,
                     small_surface.width() as u16,
                     small_surface.height() as u16,
                 );
@@ -98,6 +105,9 @@ fn run_software(mut ui: impl FnMut(&Context) + 'static) {
 
 #[cfg(feature = "winit")]
 fn main() {
+    #[cfg(not(feature = "cpu_fix"))]
+    eprintln!("Warning! Feature cpu_fix should be enabled when using raster surfaces. See https://github.com/lucasmerlin/egui_skia/issues/1");
+
     let mut demos = egui_demo_lib::DemoWindows::default();
     run_software(move |ctx| {
         egui::TopBottomPanel::top("global_menu").show(ctx, |ui| {
@@ -122,7 +132,7 @@ fn main() {
                                     150.0,
                                     &Paint::default(),
                                 );
-                            }))
+                            })),
                         })
                     });
             });

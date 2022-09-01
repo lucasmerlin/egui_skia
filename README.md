@@ -10,12 +10,13 @@ Have a look at the metal or cpu examples to get started.
 
 ```bash
 cargo run --example metal --features winit,skia-safe/metal
-cargo run --example cpu --features winit
+cargo run --example cpu --features winit,cpu_fix
 ```
 
 ## Status
 Rendering on the gpu works great, only the dancing strings example doesn't work for some reason.
-Rendering on the cpu doesn't look correct yet, I'm not sure why.
+
+For rendering on the cpu to look correct, the cpu_fix feature needs to be enabled. See https://github.com/lucasmerlin/egui_skia/issues/1 for more information.
 
 ## Preview:
 

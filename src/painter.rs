@@ -1,25 +1,39 @@
 use std::ops::Deref;
 use std::sync::Arc;
 
-use egui::{ClippedPrimitive, ImageData, TextureId, TexturesDelta};
+use egui::{ClippedPrimitive, ImageData, TextureFilter, TextureId, TexturesDelta};
 use egui::epaint::ahash::AHashMap;
-use egui::epaint::Primitive;
+use egui::epaint::{Mesh16, Primitive};
 use skia_safe::{BlendMode, Canvas, ClipOp, Color, ConditionallySend, Data, Drawable, Image, ImageInfo, Paint, PictureRecorder, Point, Rect, scalar, Sendable, Surface, Vertices};
-use skia_safe::vertices::{Builder, BuilderFlags, VertexMode};
+use skia_safe::vertices::{VertexMode};
+use skia_safe::wrapper::ValueWrapper;
+
+#[derive(Eq, PartialEq)]
+enum PaintType {
+    Image,
+    Font,
+}
 
 struct PaintHandle {
     paint: Paint,
     image: Image,
+    paint_type: PaintType,
 }
 
 pub struct Painter {
     paints: AHashMap<TextureId, PaintHandle>,
+    white_paint_workaround: Paint,
 }
 
 impl Painter {
     pub fn new() -> Painter {
+
+        let mut white_paint_workaround = Paint::default();
+        white_paint_workaround.set_color(Color::WHITE);
+
         Self {
             paints: AHashMap::new(),
+            white_paint_workaround,
         }
     }
 
@@ -30,8 +44,8 @@ impl Painter {
         primitives: Vec<ClippedPrimitive>,
         textures_delta: TexturesDelta,
     ) {
-        textures_delta.set.iter().for_each(|(id, image)| {
-            let delta_image = match &image.image {
+        textures_delta.set.iter().for_each(|(id, image_delta)| {
+            let delta_image = match &image_delta.image {
                 ImageData::Color(color_image) => Image::from_raster_data(
                     &ImageInfo::new_n32_premul(
                         skia_safe::ISize::new(
@@ -70,7 +84,7 @@ impl Painter {
                 }
             };
 
-            let image = match image.pos {
+            let image = match image_delta.pos {
                 None => delta_image,
                 Some(pos) => {
                     let old_image = self.paints.remove(&id).unwrap().image;
@@ -105,11 +119,15 @@ impl Painter {
 
             let local_matrix =
                 skia_safe::Matrix::scale((1.0 / image.width() as f32, 1.0 / image.height() as f32));
+            let filter_mode = match image_delta.filter {
+                TextureFilter::Nearest => { skia_safe::FilterMode::Nearest }
+                TextureFilter::Linear => { skia_safe::FilterMode::Linear }
+            };
             let sampling_options = skia_safe::SamplingOptions::new(
-                skia_safe::FilterMode::Nearest,
+                filter_mode,
                 skia_safe::MipmapMode::None,
             );
-            let tile_mode = skia_safe::TileMode::Repeat;
+            let tile_mode = skia_safe::TileMode::Clamp;
 
             let font_shader = image
                 .to_shader((tile_mode, tile_mode), sampling_options, &local_matrix)
@@ -121,7 +139,10 @@ impl Painter {
             paint.set_shader(font_shader);
             paint.set_color(Color::WHITE);
 
-            self.paints.insert(id.clone(), PaintHandle { paint, image });
+            self.paints.insert(id.clone(), PaintHandle { paint, image, paint_type: match image_delta.image {
+                ImageData::Color(_) => PaintType::Image,
+                ImageData::Font(_) => PaintType::Font,
+            } });
         });
 
         for primitive in primitives {
@@ -137,14 +158,19 @@ impl Painter {
                     canvas.set_matrix(&skia_safe::M44::new_identity().set_scale(dpi, dpi, 1.0));
                     let mut arc = skia_safe::AutoCanvasRestore::guard(canvas, true);
 
-                    for mesh in mesh.split_to_u16() {
+                    #[cfg(feature = "cpu_fix")]
+                    let meshes = mesh.split_to_u16().into_iter().flat_map(|mesh| self.split_texture_meshes(mesh)).collect::<Vec<Mesh16>>();
+                    #[cfg(not(feature = "cpu_fix"))]
+                    let meshes = mesh.split_to_u16();
+
+                    for mesh in &meshes {
                         let texture_id = mesh.texture_id;
 
                         let mut pos = Vec::with_capacity(mesh.vertices.len());
                         let mut texs = Vec::with_capacity(mesh.vertices.len());
                         let mut colors = Vec::with_capacity(mesh.vertices.len());
 
-                        mesh.vertices.iter().for_each(|v| {
+                        mesh.vertices.iter().enumerate().for_each(|(i, v)| {
                             pos.push(Point::new(v.pos.x, v.pos.y));
                             texs.push(Point::new(v.uv.x, v.uv.y));
                             colors.push(Color::from_argb(
@@ -155,28 +181,25 @@ impl Painter {
                             ));
                         });
 
-                        let mut vertex_builder = Builder::new(
-                            VertexMode::Triangles,
-                            mesh.vertices.len(),
-                            mesh.indices.len(),
-                            BuilderFlags::HAS_COLORS | BuilderFlags::HAS_TEX_COORDS,
-                        );
-
-                        {
-                            let indices = vertex_builder.indices().expect("indices");
-                            indices.copy_from_slice(mesh.indices.as_slice());
-                        }
-
-                        for (i, v) in mesh.vertices.iter().enumerate() {
-                            vertex_builder.positions()[i] = Point::new(v.pos.x, v.pos.y);
-                            vertex_builder.tex_coords().unwrap()[i] = Point::new(v.uv.x, v.uv.y);
-                            vertex_builder.colors().unwrap()[i] = Color::from_argb(
-                                v.color.a(),
-                                v.color.r(),
-                                v.color.g(),
-                                v.color.b(),
-                            );
-                        }
+                        // TODO: Use vertex builder
+                        // let mut vertex_builder = Builder::new(
+                        //     VertexMode::Triangles,
+                        //     mesh.vertices.len(),
+                        //     mesh.indices.len(),
+                        //     BuilderFlags::HAS_COLORS | BuilderFlags::HAS_TEX_COORDS,
+                        // );
+                        //
+                        // for (i, v) in mesh.vertices.iter().enumerate() {
+                        //     vertex_builder.positions()[i] = Point::new(v.pos.x, v.pos.y);
+                        //     vertex_builder.tex_coords().unwrap()[i] = Point::new(v.uv.x, v.uv.y);
+                        //     vertex_builder.colors().unwrap()[i] = Color::from_argb(
+                        //         v.color.a(),
+                        //         v.color.r(),
+                        //         v.color.g(),
+                        //         v.color.b(),
+                        //     );
+                        // }
+                        // let vertices = vertex_builder.detach();
 
                         let vertices = Vertices::new_copy(
                             VertexMode::Triangles,
@@ -194,10 +217,32 @@ impl Painter {
                         );
 
                         arc.clip_rect(skclip_rect, ClipOp::default(), true);
+
+                        // Egui use the uv coordinates 0,0 to get a white color when drawing vector graphics
+                        // 0,0 is always a white dot on the font texture
+                        // Unfortunately skia has a bug where it cannot get a color when the uv coordinates are equal
+                        // https://bugs.chromium.org/p/skia/issues/detail?id=13706
+                        // As a workaround, split_texture_meshes splits meshes that contain both 0,0 vertices, as
+                        // well as non-0,0 vertices into multiple meshes.
+                        // Here we check if the mesh is a font texture and if it's first uv has 0,0
+                        // If yes, we use a white paint instead of the texture shader paint
+
+                        let cpu_fix = if cfg!(feature = "cpu_fix") && self.paints.get(&mesh.texture_id).unwrap().paint_type == PaintType::Font {
+                            !texs.first().map(|point|point.x != 0.0 || point.y != 0.0).unwrap()
+                        } else {
+                            false
+                        };
+
+                        let paint = if cpu_fix {
+                            &self.white_paint_workaround
+                        } else {
+                            &self.paints[&texture_id].paint
+                        };
+
                         arc.draw_vertices(
                             &vertices,
                             BlendMode::Modulate,
-                            &self.paints[&texture_id].paint,
+                            paint,
                         );
                     }
                 }
@@ -230,6 +275,47 @@ impl Painter {
             self.paints.remove(id);
         });
     }
+
+
+    // This could be optimized more but works for now
+    #[cfg(feature = "cpu_fix")]
+    fn split_texture_meshes(&self, mesh: Mesh16) -> Vec<Mesh16> {
+
+        if self.paints.get(&mesh.texture_id).unwrap().paint_type != PaintType::Font {
+            return vec![mesh]
+        }
+
+        let mut is_zero = None;
+
+        let mut meshes = Vec::new();
+        meshes.push(Mesh16 {
+            indices: vec![],
+            vertices: vec![],
+            texture_id: mesh.texture_id
+        });
+
+        for index in mesh.indices.iter() {
+            let vertex = mesh.vertices.get(*index as usize).unwrap();
+            let is_current_zero = (vertex.uv.x == 0.0 && vertex.uv.y == 0.0);
+            if is_current_zero != is_zero.unwrap_or(is_current_zero) {
+                meshes.push(Mesh16 {
+                    indices: vec![],
+                    vertices: vec![],
+                    texture_id: mesh.texture_id
+                });
+                is_zero = Some(is_current_zero)
+            }
+            if is_zero.is_none() {
+                is_zero = Some(is_current_zero)
+            }
+            let last = meshes.last_mut().unwrap();
+            last.vertices.push(vertex.clone());
+            last.indices.push(last.indices.len() as u16);
+        }
+
+        meshes
+    }
+
 }
 
 

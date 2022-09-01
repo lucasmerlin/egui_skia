@@ -13,6 +13,7 @@ categories = ["gui"]
 
 [features]
 winit = ["dep:egui-winit"]
+cpu_fix = []
 
 [profile.dev]
 opt-level = 3
@@ -25,7 +26,7 @@ egui-winit = { version = "0.19", optional = true }
 
 
 [dev-dependencies]
-softbuffer = { git = "https://github.com/lucasmerlin/softbuffer" }
+softbuffer = { git = "https://github.com/john01dav/softbuffer" }
 egui_demo_lib = "0.19"
 raw-window-handle = "0.5"
 foreign-types-shared = "0.1.1"
