@@ -58,7 +58,19 @@ fn run_software(mut ui: impl FnMut(&Context) + 'static) {
             Event::RedrawRequested(_) => {
                 surface.canvas().clear(skia_safe::Color::TRANSPARENT);
 
-                egui_skia.run(gc.window(), &mut ui);
+                let repaint_after = egui_skia.run(gc.window(), &mut ui);
+
+                *control_flow = if repaint_after.is_zero() {
+                    gc.window().request_redraw();
+                    ControlFlow::Poll
+                } else if let Some(repaint_after_instant) =
+                std::time::Instant::now().checked_add(repaint_after)
+                {
+                    ControlFlow::WaitUntil(repaint_after_instant)
+                } else {
+                    ControlFlow::Wait
+                };
+
                 egui_skia.paint(&mut surface);
 
                 let snapshot = surface.image_snapshot();
