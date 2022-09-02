@@ -3,9 +3,10 @@ use std::sync::Arc;
 
 use egui::{ClippedPrimitive, ImageData, TextureFilter, TextureId, TexturesDelta};
 use egui::epaint::ahash::AHashMap;
-use egui::epaint::{Mesh16, Primitive};
+use egui::epaint::{Mesh16, Primitive, Vertex};
 use skia_safe::{BlendMode, Canvas, ClipOp, Color, ConditionallySend, Data, Drawable, Image, ImageInfo, Paint, PictureRecorder, Point, Rect, scalar, Sendable, Surface, Vertices};
 use skia_safe::vertices::{VertexMode};
+use skia_safe::wrapper::NativeTransmutableWrapper;
 
 #[derive(Eq, PartialEq)]
 enum PaintType {
@@ -157,10 +158,15 @@ impl Painter {
                     canvas.set_matrix(&skia_safe::M44::new_identity().set_scale(dpi, dpi, 1.0));
                     let mut arc = skia_safe::AutoCanvasRestore::guard(canvas, true);
 
+                    // Egui use the uv coordinates 0,0 to get a white color when drawing vector graphics
+                    // 0,0 is always a white dot on the font texture
+                    // Unfortunately skia has a bug where it cannot get a color when the uv coordinates are equal
+                    // https://bugs.chromium.org/p/skia/issues/detail?id=13706
+                    // As a workaround, we change the 2nd and 3rd vertex to make a small triangle on the first pixel.
+
+                    let mut meshes = mesh.split_to_u16();
                     #[cfg(feature = "cpu_fix")]
-                    let meshes = mesh.split_to_u16().into_iter().flat_map(|mesh| self.split_texture_meshes(mesh)).collect::<Vec<Mesh16>>();
-                    #[cfg(not(feature = "cpu_fix"))]
-                    let meshes = mesh.split_to_u16();
+                    meshes.iter_mut().for_each(|mesh| self.fix_zero_vertices(mesh));
 
                     for mesh in &meshes {
                         let texture_id = mesh.texture_id;
@@ -217,26 +223,7 @@ impl Painter {
 
                         arc.clip_rect(skclip_rect, ClipOp::default(), true);
 
-                        // Egui use the uv coordinates 0,0 to get a white color when drawing vector graphics
-                        // 0,0 is always a white dot on the font texture
-                        // Unfortunately skia has a bug where it cannot get a color when the uv coordinates are equal
-                        // https://bugs.chromium.org/p/skia/issues/detail?id=13706
-                        // As a workaround, split_texture_meshes splits meshes that contain both 0,0 vertices, as
-                        // well as non-0,0 vertices into multiple meshes.
-                        // Here we check if the mesh is a font texture and if it's first uv has 0,0
-                        // If yes, we use a white paint instead of the texture shader paint
-
-                        let cpu_fix = if cfg!(feature = "cpu_fix") && self.paints.get(&mesh.texture_id).unwrap().paint_type == PaintType::Font {
-                            !texs.first().map(|point|point.x != 0.0 || point.y != 0.0).unwrap()
-                        } else {
-                            false
-                        };
-
-                        let paint = if cpu_fix {
-                            &self.white_paint_workaround
-                        } else {
-                            &self.paints[&texture_id].paint
-                        };
+                        let paint= &self.paints[&texture_id].paint;
 
                         arc.draw_vertices(
                             &vertices,
@@ -278,61 +265,44 @@ impl Painter {
 
     // This could be optimized more but works for now
     #[cfg(feature = "cpu_fix")]
-    fn split_texture_meshes(&self, mesh: Mesh16) -> Vec<Mesh16> {
+    fn fix_zero_vertices(&self, mesh: &mut Mesh16) {
 
-        if self.paints.get(&mesh.texture_id).unwrap().paint_type != PaintType::Font {
-            return vec![mesh]
-        }
+        let texture = self.paints.get(&mesh.texture_id).unwrap();
+        let w = texture.image.width();
+        let h = texture.image.height();
 
-        let mut is_zero = None;
-
-        let mut meshes = Vec::new();
-
-        let mut start = 0;
-        let mut min = u16::MAX;
-        let mut max = 0;
-
-        let mut finish = |min, max, start, end| {
-            let mesh16 = Mesh16 {
-                indices: mesh.indices[start..end]
-                    .iter().map(|i| u16::try_from(i - min).unwrap()).collect(),
-                vertices: mesh.vertices[((min as usize)..=(max as usize))].to_vec(),
-                texture_id: mesh.texture_id
-            };
-
-            meshes.push(mesh16);
+        let is_null = |vertex: &Vertex| {
+            vertex.uv.x == 0.0 && vertex.uv.y == 0.0
         };
 
+        for a in 0..mesh.indices.len() / 3 {
+            let i = a * 3;
+            let index = mesh.indices[i];
+            let vertex = mesh.vertices.get(index as usize).unwrap();
 
-        for (i, index) in mesh.indices.iter().enumerate() {
-            let vertex = mesh.vertices.get(*index as usize).unwrap();
-            let is_current_zero = vertex.uv.x == 0.0 && vertex.uv.y == 0.0;
-            if is_current_zero != is_zero.unwrap_or(is_current_zero) {
-                finish(min, max, start, i - 1);
+            if is_null(vertex) {
+                let index2 = mesh.indices[i+1];
+                let index3 = mesh.indices[i+2];
 
-                min = u16::MAX;
-                max = 0;
-                start = i;
+                let mut vertex2 = mesh.vertices.get(index2 as usize).unwrap().clone();
+                let mut vertex3 = mesh.vertices.get(index3 as usize).unwrap().clone();
 
-                is_zero = Some(is_current_zero)
-            }
-            if is_zero.is_none() {
-                is_zero = Some(is_current_zero)
+                if is_null(&vertex2) && is_null(&vertex3) {
+                    vertex2.uv.x = 0.5 / w as f32;
+                    vertex3.uv.x = 0.5 / w as f32;
+                    vertex3.uv.y = 0.5 / h as f32;
+
+                    mesh.indices[i+1] = mesh.vertices.len() as u16;
+                    mesh.indices[i+2] = mesh.vertices.len() as u16 + 1;
+
+                    mesh.vertices.push(vertex2);
+                    mesh.vertices.push(vertex3);
+                }
+
             }
 
-            if *index < min {
-                min = *index;
-            }
-            if *index > max {
-                max = *index;
-            }
         }
-
-        finish(min, max, start, mesh.indices.len() - 1);
-
-        meshes
     }
-
 }
 
 
