@@ -39,7 +39,7 @@ impl Painter {
 
     pub fn paint_and_update_textures(
         &mut self,
-        surface: &mut Surface,
+        canvas: &mut Canvas,
         dpi: f32,
         primitives: Vec<ClippedPrimitive>,
         textures_delta: TexturesDelta,
@@ -154,7 +154,6 @@ impl Painter {
             );
             match primitive.primitive {
                 Primitive::Mesh(mesh) => {
-                    let canvas = surface.canvas();
                     canvas.set_matrix(&skia_safe::M44::new_identity().set_scale(dpi, dpi, 1.0));
                     let mut arc = skia_safe::AutoCanvasRestore::guard(canvas, true);
 
@@ -258,8 +257,6 @@ impl Painter {
                     );
 
                     let mut drawable: Drawable = callback.callback.deref()(skia_rect).0.unwrap();
-
-                    let canvas = surface.canvas();
 
                     let mut arc = skia_safe::AutoCanvasRestore::guard(canvas, true);
 

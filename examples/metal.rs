@@ -191,9 +191,10 @@ fn main() {
                                 .unwrap()
                         };
 
-                        surface.canvas().clear(skia_safe::colors::TRANSPARENT);
+                        let canvas = surface.canvas();
+                        canvas.clear(skia_safe::colors::TRANSPARENT);
 
-                        gui.paint(&mut surface);
+                        gui.paint(canvas);
 
                         surface.flush_and_submit();
                         drop(surface);

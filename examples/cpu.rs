@@ -56,7 +56,8 @@ fn run_software(mut ui: impl FnMut(&Context) + 'static) {
                 gc.window().request_redraw();
             }
             Event::RedrawRequested(_) => {
-                surface.canvas().clear(skia_safe::Color::TRANSPARENT);
+                let canvas = surface.canvas();
+                canvas.clear(skia_safe::Color::TRANSPARENT);
 
                 let repaint_after = egui_skia.run(gc.window(), &mut ui);
 
@@ -71,7 +72,7 @@ fn run_software(mut ui: impl FnMut(&Context) + 'static) {
                     ControlFlow::Wait
                 };
 
-                egui_skia.paint(&mut surface);
+                egui_skia.paint(canvas);
 
                 let snapshot = surface.image_snapshot();
 

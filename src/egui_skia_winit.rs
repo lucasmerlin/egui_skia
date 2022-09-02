@@ -5,7 +5,7 @@ use egui::{Context};
 pub use egui_winit;
 use egui_winit::winit::event_loop::EventLoopWindowTarget;
 use egui_winit::winit::window::Window;
-use skia_safe::Surface;
+use skia_safe::{Canvas};
 
 use crate::EguiSkia;
 
@@ -48,7 +48,7 @@ impl EguiSkiaWinit {
     }
 
     /// Paint the results of the last call to [`Self::run`].
-    pub fn paint(&mut self, surface: &mut Surface) {
-        self.egui_skia.paint(surface);
+    pub fn paint(&mut self, canvas: &mut Canvas) {
+        self.egui_skia.paint(canvas);
     }
 }

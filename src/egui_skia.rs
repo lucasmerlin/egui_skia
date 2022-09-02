@@ -1,6 +1,6 @@
 use crate::painter::Painter;
 use egui::{Context, Pos2};
-use skia_safe::{Surface};
+use skia_safe::{Canvas, Surface};
 use std::time::Duration;
 
 pub struct RasterizeOptions {
@@ -47,7 +47,7 @@ pub fn draw_onto_surface(
 
     backend.run(input, ui);
 
-    backend.paint(surface);
+    backend.paint(surface.canvas());
 }
 
 /// Convenience wrapper for using [`egui`] from a [`skia`] app.
@@ -92,12 +92,12 @@ impl EguiSkia {
     }
 
     /// Paint the results of the last call to [`Self::run`].
-    pub fn paint(&mut self, surface: &mut Surface) {
+    pub fn paint(&mut self, canvas: &mut Canvas) {
         let shapes = std::mem::take(&mut self.shapes);
         let textures_delta = std::mem::take(&mut self.textures_delta);
         let clipped_primitives = self.egui_ctx.tessellate(shapes);
         self.painter.paint_and_update_textures(
-            surface,
+            canvas,
             self.egui_ctx.pixels_per_point(),
             clipped_primitives,
             textures_delta,
