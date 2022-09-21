@@ -22,7 +22,7 @@ opt-level = 3
 
 egui = "0.19"
 skia-safe = { version = "^0.53", features = [] }
-egui-winit = { version = "0.19", optional = true }
+egui-winit = { version = "0.19", optional = true, default-features = false }
 
 
 [dev-dependencies]
