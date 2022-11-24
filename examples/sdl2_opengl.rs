@@ -18,6 +18,7 @@ use egui_skia::EguiSkia;
 
 fn main() {
     let sdl_context = sdl2::init().unwrap();
+    let mut event_pump = sdl_context.event_pump().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
 
     let gl_attr = video_subsystem.gl_attr();
@@ -87,11 +88,6 @@ fn main() {
     let mut egui_skia = EguiSkia::new();
 
     let mut demo_ui = egui_demo_lib::DemoWindows::default();
-
-
-    println!("{:?}", surface);
-
-    let mut event_pump = sdl_context.event_pump().unwrap();
 
     let mut frame_timer = FrameTimer::new();
     let mut running_time: f64 = 0.0;
