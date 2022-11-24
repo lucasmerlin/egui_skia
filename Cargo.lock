@@ -1728,8 +1728,7 @@ dependencies = [
 [[package]]
 name = "skulpin"
 version = "0.14.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1788de1116cd73c63784ec4f2fcf4bb29cd81a4743ab5c2bcf648f5058da7676"
+source = "git+https://github.com/aclysma/skulpin#c5fb3420c07d5014338917fe15436cd780badff8"
 dependencies = [
  "log",
  "skulpin-renderer",
@@ -1738,8 +1737,7 @@ dependencies = [
 [[package]]
 name = "skulpin-renderer"
 version = "0.14.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cfc0b1ba185aea8c7583802fb04b77daca2600145133f0f20bc1885afd3fb829"
+source = "git+https://github.com/aclysma/skulpin#c5fb3420c07d5014338917fe15436cd780badff8"
 dependencies = [
  "bincode",
  "lazy_static",

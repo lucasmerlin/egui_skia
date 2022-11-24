@@ -16,7 +16,7 @@ cargo run --example rasterize --features winit,cpu_fix
 # Make sure sdl2 is installed
 # Follow instructions here: https://github.com/Rust-SDL2/rust-sdl2
 cargo run --example sdl2_opengl --features gl
-cargo run --example sdl2_vulkan
+cargo run --example sdl2_vulkan --features vulkan
 ```
 
 ## Status

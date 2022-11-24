@@ -27,7 +27,7 @@ egui = "0.19"
 skia-safe = { version = ">= 0.53", features = [] }
 egui-winit = { version = "0.19", optional = true, default-features = false }
 
-skulpin = { version = "0.14.1", features = [], optional = true}
+skulpin = { git = "https://github.com/aclysma/skulpin", features = [], optional = true}
 
 [dev-dependencies]
 softbuffer = { git = "https://github.com/john01dav/softbuffer" }
