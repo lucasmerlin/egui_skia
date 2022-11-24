@@ -11,24 +11,24 @@ pub fn main() {
         |ctx| {
             demo.ui(ctx);
 
-            egui::Window::new("Draw to skia")
-                .show(ctx, |ui| {
-                    egui::ScrollArea::horizontal()
-                        .show(ui, |ui| {
-                            let (rect, _) =
-                                ui.allocate_exact_size(egui::Vec2::splat(300.0), egui::Sense::drag());
-                            ui.painter().add(egui::PaintCallback {
-                                rect: rect.clone(),
-                                callback: std::sync::Arc::new(egui_skia::EguiSkiaPaintCallback::new(move |canvas| {
-                                    canvas.draw_circle(
-                                        Point::new(150.0, 150.0),
-                                        150.0,
-                                        &Paint::default(),
-                                    );
-                                }))
-                            })
-                        });
+            egui::Window::new("Draw to skia").show(ctx, |ui| {
+                egui::ScrollArea::horizontal().show(ui, |ui| {
+                    let (rect, _) =
+                        ui.allocate_exact_size(egui::Vec2::splat(300.0), egui::Sense::drag());
+                    ui.painter().add(egui::PaintCallback {
+                        rect: rect.clone(),
+                        callback: std::sync::Arc::new(egui_skia::EguiSkiaPaintCallback::new(
+                            move |canvas| {
+                                canvas.draw_circle(
+                                    Point::new(150.0, 150.0),
+                                    150.0,
+                                    &Paint::default(),
+                                );
+                            },
+                        )),
+                    })
                 });
+            });
         },
         None,
     );

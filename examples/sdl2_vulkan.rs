@@ -1,11 +1,11 @@
 // This example shows how to use the renderer with SDL2 directly.
 
 use egui_sdl2_event::EguiSDL2State;
-use skulpin::skia_safe;
-use skulpin::{CoordinateSystemHelper, RendererBuilder, LogicalSize};
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use skulpin::rafx::api::RafxExtents2D;
+use skulpin::skia_safe;
+use skulpin::{LogicalSize, RendererBuilder};
 
 fn main() {
     // Setup SDL
@@ -61,36 +61,34 @@ fn main() {
 
     let mut renderer = renderer.unwrap();
 
-
     println!("Starting window event loop");
     let mut event_pump = sdl_context
         .event_pump()
         .expect("Could not create sdl event pump");
 
-
-    let dpi_scale = video_subsystem.display_dpi(window.display_index().unwrap()).unwrap().0;
+    let dpi_scale = video_subsystem
+        .display_dpi(window.display_index().unwrap())
+        .unwrap()
+        .0;
     let dpi_scale = dpi_scale / 72.0;
 
     println!("DPI: {}", dpi_scale);
 
-    let mut egui_sdl2_state = EguiSDL2State::new(window.drawable_size().0, window.drawable_size().1, 1.0);
+    let mut egui_sdl2_state =
+        EguiSDL2State::new(window.drawable_size().0, window.drawable_size().1, 1.0);
     let mut egui_skia = EguiSkia::new();
 
     let mut demo_ui = egui_demo_lib::DemoWindows::default();
 
-
     let mut frame_timer = FrameTimer::new();
     let mut running_time: f64 = 0.0;
 
-
     'running: loop {
-
         frame_timer.time_start();
         let delta = frame_timer.delta();
         running_time += delta as f64;
 
         egui_sdl2_state.update_time(Some(running_time), delta);
-
 
         for event in event_pump.poll_iter() {
             match &event {
@@ -106,7 +104,7 @@ fn main() {
             egui_sdl2_state.sdl2_input_to_egui(&window, &event)
         }
 
-        let (duration, full_output) = egui_skia.run(egui_sdl2_state.raw_input.take(), |ctx| {
+        let (_duration, full_output) = egui_skia.run(egui_sdl2_state.raw_input.take(), |ctx| {
             demo_ui.ui(ctx);
         });
         egui_sdl2_state.process_output(&window, &full_output);
@@ -117,7 +115,7 @@ fn main() {
             height: window_height,
         };
         renderer
-            .draw(extents, 1.0, |canvas, coordinate_system_helper| {
+            .draw(extents, 1.0, |canvas, _coordinate_system_helper| {
                 canvas.clear(Color::BLACK);
                 egui_skia.paint(canvas);
             })
@@ -127,10 +125,9 @@ fn main() {
     }
 }
 
-
+use egui_skia::EguiSkia;
 use sdl2::sys::Uint32;
 use skia_safe::Color;
-use egui_skia::EguiSkia;
 
 pub struct FrameTimer {
     last_time: u32,

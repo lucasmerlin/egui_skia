@@ -16,6 +16,7 @@ winit = ["dep:egui-winit"]
 cpu_fix = []
 
 gl = ["skia-safe/gl"]
+vulkan = ["skia-safe/vulkan", "skulpin"]
 
 [profile.dev]
 opt-level = 3
@@ -26,6 +27,7 @@ egui = "0.19"
 skia-safe = { version = ">= 0.53", features = [] }
 egui-winit = { version = "0.19", optional = true, default-features = false }
 
+skulpin = { version = "0.14.1", features = [], optional = true}
 
 [dev-dependencies]
 softbuffer = { git = "https://github.com/john01dav/softbuffer" }
@@ -36,7 +38,6 @@ foreign-types-shared = "0.1.1"
 sdl2 = { version = "0.35.2", features = ["raw-window-handle"] }
 gl = "0.14.0"
 egui-sdl2-event = "0.2.2"
-skulpin = { version = "0.14.1", features = []}
 
 [target.'cfg(target_os = "macos")'.dev-dependencies]
 metal = "0.24"

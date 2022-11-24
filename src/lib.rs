@@ -9,4 +9,4 @@ mod egui_skia_winit;
 pub use egui_skia_winit::EguiSkiaWinit;
 
 pub use egui_skia::*;
-pub use painter::{EguiSkiaPaintCallback};
+pub use painter::EguiSkiaPaintCallback;

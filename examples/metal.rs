@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use egui::ScrollArea;
-use metal::{Device, MetalLayer, MTLPixelFormat};
-use skia_safe::{Color, ColorType, Font, Paint, PathEffect, Point, scalar, Size, Surface};
+use metal::{Device, MTLPixelFormat, MetalLayer};
+use skia_safe::{scalar, Color, ColorType, Font, Paint, PathEffect, Point, Size, Surface};
 
 use egui_skia::{EguiSkiaPaintCallback, EguiSkiaWinit};
 
@@ -83,45 +83,42 @@ fn main() {
 
             let repaint_after = gui.run(&window, |egui_ctx| {
                 demo.ui(egui_ctx);
-                egui::Window::new("Draw to skia")
-                    .show(egui_ctx, |ui| {
-                        ScrollArea::horizontal()
-                            .show(ui, |ui| {
-                                let (rect, _) =
-                                    ui.allocate_exact_size(egui::Vec2::splat(300.0), egui::Sense::drag());
-                                egui_ctx.request_repaint();
-                                let si = (frame as f32 / 120.0).sin();
-                                let frame = frame.clone();
+                egui::Window::new("Draw to skia").show(egui_ctx, |ui| {
+                    ScrollArea::horizontal().show(ui, |ui| {
+                        let (rect, _) =
+                            ui.allocate_exact_size(egui::Vec2::splat(300.0), egui::Sense::drag());
+                        egui_ctx.request_repaint();
+                        let si = (frame as f32 / 120.0).sin();
+                        let frame = frame.clone();
 
-                                ui.painter().add(egui::PaintCallback {
-                                    rect: rect.clone(),
-                                    callback: Arc::new(EguiSkiaPaintCallback::new(move |canvas| {
-                                        let center = Point::new(150.0, 150.0);
-                                        canvas.save();
-                                        canvas.rotate(si * 5.0, Some(center));
-                                        let mut paint = Paint::default();
-                                        paint.set_color(Color::from_argb(255, 255, 255, 255));
-                                        canvas.draw_str(
-                                            "Hello Skia!",
-                                            Point::new(100.0, 150.0),
-                                            &Font::default().with_size(20.0).unwrap(),
-                                            &paint,
-                                        );
+                        ui.painter().add(egui::PaintCallback {
+                            rect: rect.clone(),
+                            callback: Arc::new(EguiSkiaPaintCallback::new(move |canvas| {
+                                let center = Point::new(150.0, 150.0);
+                                canvas.save();
+                                canvas.rotate(si * 5.0, Some(center));
+                                let mut paint = Paint::default();
+                                paint.set_color(Color::from_argb(255, 255, 255, 255));
+                                canvas.draw_str(
+                                    "Hello Skia!",
+                                    Point::new(100.0, 150.0),
+                                    &Font::default().with_size(20.0).unwrap(),
+                                    &paint,
+                                );
 
-                                        let mut circle_paint = Paint::default();
-                                        circle_paint.set_path_effect(PathEffect::dash(&[si * 5.0 + 20.0, si * 5.0 + 20.0], 1.0));
-                                        circle_paint.set_style(skia_safe::PaintStyle::Stroke);
-                                        circle_paint.set_stroke_width(10.0);
-                                        circle_paint.set_stroke_cap(skia_safe::PaintCap::Round);
-                                        canvas.draw_circle(
-                                            center,
-                                            100.0,
-                                            &circle_paint,
-                                        );
-                                    })),
-                                })
-                            });
+                                let mut circle_paint = Paint::default();
+                                circle_paint.set_path_effect(PathEffect::dash(
+                                    &[si * 5.0 + 20.0, si * 5.0 + 20.0],
+                                    1.0,
+                                ));
+                                circle_paint.set_style(skia_safe::PaintStyle::Stroke);
+                                circle_paint.set_stroke_width(10.0);
+                                circle_paint.set_stroke_cap(skia_safe::PaintCap::Round);
+                                canvas.draw_circle(center, 100.0, &circle_paint);
+                            })),
+                        })
                     });
+                });
             });
 
             *control_flow = if quit {
@@ -130,7 +127,7 @@ fn main() {
                 window.request_redraw();
                 ControlFlow::Poll
             } else if let Some(repaint_after_instant) =
-            std::time::Instant::now().checked_add(repaint_after)
+                std::time::Instant::now().checked_add(repaint_after)
             {
                 ControlFlow::WaitUntil(repaint_after_instant)
             } else {
@@ -142,10 +139,7 @@ fn main() {
                     // Update Egui integration so the UI works!
                     let _pass_events_to_game = !gui.on_event(&event);
                     match event {
-                        WindowEvent::ScaleFactorChanged {
-                            new_inner_size,
-                            ..
-                        } => {
+                        WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
                             metal_layer.set_drawable_size(CGSize::new(
                                 new_inner_size.width as f64,
                                 new_inner_size.height as f64,
@@ -188,7 +182,7 @@ fn main() {
                                 None,
                                 None,
                             )
-                                .unwrap()
+                            .unwrap()
                         };
 
                         let canvas = surface.canvas();

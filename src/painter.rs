@@ -1,12 +1,15 @@
 use std::ops::Deref;
 use std::sync::Arc;
 
-use egui::{ClippedPrimitive, ImageData, TextureFilter, TextureId, TexturesDelta};
 use egui::epaint::ahash::AHashMap;
 use egui::epaint::{Mesh16, Primitive};
-use skia_safe::{BlendMode, Canvas, ClipOp, Color, ConditionallySend, Data, Drawable, Image, ImageInfo, Paint, PictureRecorder, Point, Rect, scalar, Sendable, Surface, Vertices};
-use skia_safe::vertices::{VertexMode};
+use egui::{ClippedPrimitive, ImageData, TextureFilter, TextureId, TexturesDelta};
+use skia_safe::vertices::VertexMode;
 use skia_safe::wrapper::ValueWrapper;
+use skia_safe::{
+    scalar, BlendMode, Canvas, ClipOp, Color, ConditionallySend, Data, Drawable, Image, ImageInfo,
+    Paint, PictureRecorder, Point, Rect, Sendable, Surface, Vertices,
+};
 
 #[derive(Eq, PartialEq)]
 enum PaintType {
@@ -27,7 +30,6 @@ pub struct Painter {
 
 impl Painter {
     pub fn new() -> Painter {
-
         let mut white_paint_workaround = Paint::default();
         white_paint_workaround.set_color(Color::WHITE);
 
@@ -64,7 +66,7 @@ impl Painter {
                     ),
                     color_image.width() * 4,
                 )
-                    .unwrap(),
+                .unwrap(),
                 ImageData::Font(font) => {
                     let pixels = font.srgba_pixels(1.0);
                     Image::from_raster_data(
@@ -80,7 +82,7 @@ impl Painter {
                         ),
                         font.width() * 4,
                     )
-                        .unwrap()
+                    .unwrap()
                 }
             };
 
@@ -93,7 +95,7 @@ impl Painter {
                         old_image.width() as i32,
                         old_image.height() as i32,
                     ))
-                        .unwrap();
+                    .unwrap();
 
                     let canvas = surface.canvas();
 
@@ -120,13 +122,11 @@ impl Painter {
             let local_matrix =
                 skia_safe::Matrix::scale((1.0 / image.width() as f32, 1.0 / image.height() as f32));
             let filter_mode = match image_delta.filter {
-                TextureFilter::Nearest => { skia_safe::FilterMode::Nearest }
-                TextureFilter::Linear => { skia_safe::FilterMode::Linear }
+                TextureFilter::Nearest => skia_safe::FilterMode::Nearest,
+                TextureFilter::Linear => skia_safe::FilterMode::Linear,
             };
-            let sampling_options = skia_safe::SamplingOptions::new(
-                filter_mode,
-                skia_safe::MipmapMode::None,
-            );
+            let sampling_options =
+                skia_safe::SamplingOptions::new(filter_mode, skia_safe::MipmapMode::None);
             let tile_mode = skia_safe::TileMode::Clamp;
 
             let font_shader = image
@@ -139,10 +139,17 @@ impl Painter {
             paint.set_shader(font_shader);
             paint.set_color(Color::WHITE);
 
-            self.paints.insert(id.clone(), PaintHandle { paint, image, paint_type: match image_delta.image {
-                ImageData::Color(_) => PaintType::Image,
-                ImageData::Font(_) => PaintType::Font,
-            } });
+            self.paints.insert(
+                id.clone(),
+                PaintHandle {
+                    paint,
+                    image,
+                    paint_type: match image_delta.image {
+                        ImageData::Color(_) => PaintType::Image,
+                        ImageData::Font(_) => PaintType::Font,
+                    },
+                },
+            );
         });
 
         for primitive in primitives {
@@ -158,7 +165,11 @@ impl Painter {
                     let mut arc = skia_safe::AutoCanvasRestore::guard(canvas, true);
 
                     #[cfg(feature = "cpu_fix")]
-                    let meshes = mesh.split_to_u16().into_iter().flat_map(|mesh| self.split_texture_meshes(mesh)).collect::<Vec<Mesh16>>();
+                    let meshes = mesh
+                        .split_to_u16()
+                        .into_iter()
+                        .flat_map(|mesh| self.split_texture_meshes(mesh))
+                        .collect::<Vec<Mesh16>>();
                     #[cfg(not(feature = "cpu_fix"))]
                     let meshes = mesh.split_to_u16();
 
@@ -169,7 +180,7 @@ impl Painter {
                         let mut texs = Vec::with_capacity(mesh.vertices.len());
                         let mut colors = Vec::with_capacity(mesh.vertices.len());
 
-                        mesh.vertices.iter().enumerate().for_each(|(i, v)| {
+                        mesh.vertices.iter().enumerate().for_each(|(_i, v)| {
                             pos.push(Point::new(v.pos.x, v.pos.y));
                             texs.push(Point::new(v.uv.x, v.uv.y));
                             colors.push(Color::from_argb(
@@ -226,8 +237,14 @@ impl Painter {
                         // Here we check if the mesh is a font texture and if it's first uv has 0,0
                         // If yes, we use a white paint instead of the texture shader paint
 
-                        let cpu_fix = if cfg!(feature = "cpu_fix") && self.paints.get(&mesh.texture_id).unwrap().paint_type == PaintType::Font {
-                            !texs.first().map(|point|point.x != 0.0 || point.y != 0.0).unwrap()
+                        let cpu_fix = if cfg!(feature = "cpu_fix")
+                            && self.paints.get(&mesh.texture_id).unwrap().paint_type
+                                == PaintType::Font
+                        {
+                            !texs
+                                .first()
+                                .map(|point| point.x != 0.0 || point.y != 0.0)
+                                .unwrap()
                         } else {
                             false
                         };
@@ -238,11 +255,7 @@ impl Painter {
                             &self.paints[&texture_id].paint
                         };
 
-                        arc.draw_vertices(
-                            &vertices,
-                            BlendMode::Modulate,
-                            paint,
-                        );
+                        arc.draw_vertices(&vertices, BlendMode::Modulate, paint);
                     }
                 }
                 Primitive::Callback(data) => {
@@ -273,13 +286,11 @@ impl Painter {
         });
     }
 
-
     // This could be optimized more but works for now
     #[cfg(feature = "cpu_fix")]
     fn split_texture_meshes(&self, mesh: Mesh16) -> Vec<Mesh16> {
-
         if self.paints.get(&mesh.texture_id).unwrap().paint_type != PaintType::Font {
-            return vec![mesh]
+            return vec![mesh];
         }
 
         let mut is_zero = None;
@@ -288,7 +299,7 @@ impl Painter {
         meshes.push(Mesh16 {
             indices: vec![],
             vertices: vec![],
-            texture_id: mesh.texture_id
+            texture_id: mesh.texture_id,
         });
 
         for index in mesh.indices.iter() {
@@ -298,7 +309,7 @@ impl Painter {
                 meshes.push(Mesh16 {
                     indices: vec![],
                     vertices: vec![],
-                    texture_id: mesh.texture_id
+                    texture_id: mesh.texture_id,
                 });
                 is_zero = Some(is_current_zero)
             }
@@ -312,9 +323,7 @@ impl Painter {
 
         meshes
     }
-
 }
-
 
 pub struct EguiSkiaPaintCallback {
     callback: Box<dyn Fn(Rect) -> SyncSendableDrawable + Send + Sync>,
@@ -327,7 +336,12 @@ impl EguiSkiaPaintCallback {
                 let mut pr = PictureRecorder::new();
                 let mut canvas = pr.begin_recording(rect, None);
                 callback(&mut canvas);
-                SyncSendableDrawable(pr.finish_recording_as_drawable().unwrap().wrap_send().unwrap())
+                SyncSendableDrawable(
+                    pr.finish_recording_as_drawable()
+                        .unwrap()
+                        .wrap_send()
+                        .unwrap(),
+                )
             }),
         }
     }

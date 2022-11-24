@@ -65,7 +65,7 @@ fn run_software(mut ui: impl FnMut(&Context) + 'static) {
                     gc.window().request_redraw();
                     ControlFlow::Poll
                 } else if let Some(repaint_after_instant) =
-                std::time::Instant::now().checked_add(repaint_after)
+                    std::time::Instant::now().checked_add(repaint_after)
                 {
                     ControlFlow::WaitUntil(repaint_after_instant)
                 } else {
@@ -96,14 +96,16 @@ fn run_software(mut ui: impl FnMut(&Context) + 'static) {
                 let peek = snapshot.peek_pixels().unwrap();
                 let pixels: &[u32] = peek.pixels().unwrap();
 
-
                 // No idea why R and B have to be swapped
-                let transformed = (pixels.iter().map(|x|
-                                                             (x & 0xFF000000) |
-                                                             ((x & 0x00FF0000) >>  16) |
-                                                             (x & 0x0000FF00) |
-                                                             ((x & 0x000000FF) << 16)
-                ).collect::<Vec<u32>>());
+                let transformed = pixels
+                    .iter()
+                    .map(|x| {
+                        (x & 0xFF000000)
+                            | ((x & 0x00FF0000) >> 16)
+                            | (x & 0x0000FF00)
+                            | ((x & 0x000000FF) << 16)
+                    })
+                    .collect::<Vec<u32>>();
 
                 gc.set_buffer(
                     &transformed,
@@ -131,24 +133,18 @@ fn main() {
         });
 
         demos.ui(ctx);
-        egui::Window::new("Draw to skia")
-            .show(ctx, |ui| {
-                ScrollArea::horizontal()
-                    .show(ui, |ui| {
-                        let (rect, _) =
-                            ui.allocate_exact_size(egui::Vec2::splat(300.0), egui::Sense::drag());
-                        ui.painter().add(egui::PaintCallback {
-                            rect: rect.clone(),
-                            callback: Arc::new(EguiSkiaPaintCallback::new(move |canvas| {
-                                canvas.draw_circle(
-                                    Point::new(150.0, 150.0),
-                                    150.0,
-                                    &Paint::default(),
-                                );
-                            })),
-                        })
-                    });
+        egui::Window::new("Draw to skia").show(ctx, |ui| {
+            ScrollArea::horizontal().show(ui, |ui| {
+                let (rect, _) =
+                    ui.allocate_exact_size(egui::Vec2::splat(300.0), egui::Sense::drag());
+                ui.painter().add(egui::PaintCallback {
+                    rect: rect.clone(),
+                    callback: Arc::new(EguiSkiaPaintCallback::new(move |canvas| {
+                        canvas.draw_circle(Point::new(150.0, 150.0), 150.0, &Paint::default());
+                    })),
+                })
             });
+        });
     });
 }
 
