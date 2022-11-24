@@ -250,10 +250,10 @@ impl Painter {
                     let rect = data.rect;
 
                     let skia_rect = Rect::new(
-                        rect.min.x,
-                        rect.min.y,
-                        rect.max.x,
-                        rect.max.y,
+                        rect.min.x * dpi,
+                        rect.min.y * dpi,
+                        rect.max.x * dpi,
+                        rect.max.y * dpi,
                     );
 
                     let mut drawable: Drawable = callback.callback.deref()(skia_rect).0.unwrap();
