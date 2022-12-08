@@ -10,24 +10,14 @@ keywords = ["skia", "egui", "skia-safe", "gui"]
 categories = ["gui"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[features]
-winit = ["dep:egui-winit"]
-cpu_fix = []
-
-gl = ["skia-safe/gl"]
-vulkan = ["skia-safe/vulkan", "skulpin"]
-
-[profile.dev]
-opt-level = 3
-
 [dependencies]
-
 egui = "0.19"
 skia-safe = { version = ">= 0.53", features = [] }
 egui-winit = { version = "0.19", optional = true, default-features = false }
-
-skulpin = { git = "https://github.com/aclysma/skulpin", features = [], optional = true}
+sdl2 = { version = "0.35.2", features = ["raw-window-handle", "bundled"], optional = true }
+gl = { version = "0.14.0", optional = true }
+egui-sdl2-event = { version = "0.2.2", optional = true }
+skulpin = { git = "https://github.com/aclysma/skulpin", features = [], optional = true }
 
 [dev-dependencies]
 softbuffer = { git = "https://github.com/john01dav/softbuffer" }
@@ -35,12 +25,18 @@ egui_demo_lib = "0.19"
 raw-window-handle = "0.5"
 foreign-types-shared = "0.1.1"
 
-sdl2 = { version = "0.35.2", features = ["raw-window-handle"] }
-gl = "0.14.0"
-egui-sdl2-event = "0.2.2"
-
 [target.'cfg(target_os = "macos")'.dev-dependencies]
 metal = "0.24"
 cocoa = "0.24"
 core-graphics-types = "0.1"
 objc = "0.2"
+
+[profile.dev]
+opt-level = 3
+
+[features]
+winit = ["dep:egui-winit"]
+cpu_fix = []
+gl = ["dep:gl", "skia-safe/gl", "skia-safe/x11"]
+sdl2 = ["dep:sdl2", "egui-sdl2-event"]
+vulkan = ["skia-safe/vulkan", "skulpin"]

@@ -1,41 +1,54 @@
 // This example shows how to use the renderer with SDL2 directly.
 
+#[cfg(feature = "sdl2")]
 use egui_sdl2_event::EguiSDL2State;
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-use skulpin::rafx::api::RafxExtents2D;
-use skulpin::skia_safe;
-use skulpin::{LogicalSize, RendererBuilder};
+#[cfg(feature = "sdl2")]
+use sdl2::{event::Event, keyboard::Keycode};
+#[cfg(feature = "vulkan")]
+use skulpin::{rafx::api::RafxExtents2D, skia_safe::{self, Color}, {LogicalSize, PhysicalSize, RendererBuilder}};
+#[cfg(feature = "vulkan")]
+use egui_skia::EguiSkia;
+#[cfg(feature = "sdl2")]
+use egui_skia::GetDpi as _;
 
+#[cfg(not(all(feature = "sdl2", feature = "vulkan")))]
+fn main() {
+    eprintln!("This example must be built with --features sdl2,vulkan");
+}
+#[cfg(all(feature = "sdl2", feature = "vulkan"))]
 fn main() {
     // Setup SDL
     let sdl_context = sdl2::init().expect("Failed to initialize sdl2");
     let video_subsystem = sdl_context
         .video()
         .expect("Failed to create sdl video subsystem");
+    let logical_size = LogicalSize { width: 900, height: 600 };
+
+    let mut window = video_subsystem
+        .window("Skulpin", logical_size.width, logical_size.height)
+        .position_centered()
+        .resizable()
+        .allow_highdpi()
+        .build()
+        .expect("Failed to create window");
+    let dpi = window.infallible_dpi();
+    println!("window created");
 
     // Set up the coordinate system to be fixed at 900x600, and use this as the default window size
     // This means the drawing code can be written as though the window is always 900x600. The
     // output will be automatically scaled so that it's always visible.
-    let logical_size = LogicalSize {
-        width: 900,
-        height: 600,
+    let physical_size = PhysicalSize {
+        width: (900. * dpi) as u32,
+        height: (600. * dpi) as u32,
     };
+    window.set_size(physical_size.width, physical_size.height);
     let scale_to_fit = skulpin::skia_safe::matrix::ScaleToFit::Center;
     let visible_range = skulpin::skia_safe::Rect {
         left: 0.0,
-        right: logical_size.width as f32,
+        right: physical_size.width as f32,
         top: 0.0,
-        bottom: logical_size.height as f32,
+        bottom: physical_size.height as f32,
     };
-
-    let window = video_subsystem
-        .window("Skulpin", logical_size.width, logical_size.height)
-        .position_centered()
-        .resizable()
-        .build()
-        .expect("Failed to create window");
-    println!("window created");
 
     let (window_width, window_height) = window.vulkan_drawable_size();
 
@@ -66,16 +79,8 @@ fn main() {
         .event_pump()
         .expect("Could not create sdl event pump");
 
-    let dpi_scale = video_subsystem
-        .display_dpi(window.display_index().unwrap())
-        .unwrap()
-        .0;
-    let dpi_scale = dpi_scale / 72.0;
-
-    println!("DPI: {}", dpi_scale);
-
     let mut egui_sdl2_state =
-        EguiSDL2State::new(window.drawable_size().0, window.drawable_size().1, 1.0);
+        EguiSDL2State::new(window.drawable_size().0, window.drawable_size().1, dpi);
     let mut egui_skia = EguiSkia::new();
 
     let mut demo_ui = egui_demo_lib::DemoWindows::default();
@@ -125,10 +130,6 @@ fn main() {
     }
 }
 
-use egui_skia::EguiSkia;
-use sdl2::sys::Uint32;
-use skia_safe::Color;
-
 pub struct FrameTimer {
     last_time: u32,
     frame_time: u32,
@@ -149,7 +150,7 @@ impl FrameTimer {
         }
     }
 
-    fn time_now(&self) -> Uint32 {
+    fn time_now(&self) -> sdl2::sys::Uint32 {
         #[allow(unsafe_code)]
         unsafe {
             sdl2::sys::SDL_GetTicks()

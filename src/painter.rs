@@ -2,10 +2,9 @@ use std::ops::Deref;
 use std::sync::Arc;
 
 use egui::epaint::ahash::AHashMap;
-use egui::epaint::{Mesh16, Primitive};
+use egui::epaint::Primitive;
 use egui::{ClippedPrimitive, ImageData, TextureFilter, TextureId, TexturesDelta};
 use skia_safe::vertices::VertexMode;
-use skia_safe::wrapper::ValueWrapper;
 use skia_safe::{
     scalar, BlendMode, Canvas, ClipOp, Color, ConditionallySend, Data, Drawable, Image, ImageInfo,
     Paint, PictureRecorder, Point, Rect, Sendable, Surface, Vertices,

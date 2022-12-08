@@ -1,22 +1,38 @@
+#[cfg(feature = "gl")]
 extern crate gl;
+#[cfg(feature = "sdl2")]
 extern crate sdl2;
 
+#[cfg(feature = "sdl2")]
 use egui_sdl2_event::EguiSDL2State;
-use sdl2::event::{Event, WindowEvent};
-use sdl2::keyboard::Keycode;
-use sdl2::sys::Uint32;
-use sdl2::video::{GLProfile, Window};
-use skia_safe::gpu::gl::FramebufferInfo;
-use skia_safe::gpu::{BackendRenderTarget, SurfaceOrigin};
+#[cfg(feature = "sdl2")]
+use sdl2::{event::{Event, WindowEvent}, keyboard::Keycode, sys::Uint32, video::{GLProfile, Window}};
+#[cfg(feature = "gl")]
+use skia_safe::gpu::{gl::FramebufferInfo, {BackendRenderTarget, SurfaceOrigin}};
+#[cfg(feature = "gl")]
 use skia_safe::{Color, ColorType, Surface};
 
+#[cfg(feature = "gl")]
 use egui_skia::EguiSkia;
+#[cfg(feature = "sdl2")]
+use egui_skia::GetDpi as _;
 
 /// This is a mix of the rust-sdl2 opengl example,
 /// the skia-safe gl window example: https://github.com/rust-skia/rust-skia/blob/master/skia-safe/examples/gl-window/main.rs
 /// and the egui-sdl2-event example: https://github.com/kaphula/egui-sdl2-event-example
 
+#[cfg(feature = "sdl2")]
+const WINSIZE: (u32, u32) = (1024, 720);
+
+#[cfg(not(all(feature = "sdl2", feature = "gl")))]
 fn main() {
+    eprintln!("This example must be run with --features gl,sdl2")
+}
+
+#[cfg(all(feature = "sdl2", feature = "gl"))]
+fn main() {
+    #[cfg(target_os = "linux")]
+    std::env::set_var("SDL2_VIDEODRIVER", "x11");
     let sdl_context = sdl2::init().unwrap();
     let mut event_pump = sdl_context.event_pump().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
@@ -25,15 +41,18 @@ fn main() {
     gl_attr.set_context_profile(GLProfile::Core);
     gl_attr.set_context_version(3, 3);
 
-    let window = video_subsystem
-        .window("Window", 800, 600)
+    let mut window = video_subsystem
+        .window("egui-skia demo", WINSIZE.0, WINSIZE.1)
         .opengl()
         .resizable()
+        .allow_highdpi()
         .build()
         .unwrap();
+    let dpi = window.infallible_dpi();
+    window.set_size((WINSIZE.0 as f32 * dpi) as u32, (WINSIZE.1 as f32 * dpi) as u32).unwrap();
 
     // Unlike the other example above, nobody created a context for your window, so you need to create one.
-    let ctx = window.gl_create_context().unwrap();
+    let _ctx = window.gl_create_context().unwrap();
     gl::load_with(|name| video_subsystem.gl_get_proc_address(name) as *const _);
 
     debug_assert_eq!(gl_attr.context_profile(), GLProfile::Core);
@@ -73,7 +92,7 @@ fn main() {
 
     let mut surface = create_surface(&window, &fb_info, &mut gr_context);
 
-    let mut egui_sdl2_state = EguiSDL2State::new(window.size().0, window.size().1, 1.0);
+    let mut egui_sdl2_state = EguiSDL2State::new(window.size().0, window.size().1, dpi);
     let mut egui_skia = EguiSkia::new();
 
     let mut demo_ui = egui_demo_lib::DemoWindows::default();
@@ -128,8 +147,8 @@ fn main() {
     }
 }
 
+#[cfg(feature = "sdl2")]
 pub struct FrameTimer {
-    last_time: u32,
     frame_time: u32,
     delta: f32,
     start: u32,
@@ -138,10 +157,10 @@ pub struct FrameTimer {
 
 pub const MS_TO_SECONDS: f32 = 1.0 / 1000.0;
 
+#[cfg(feature = "sdl2")]
 impl FrameTimer {
     pub fn new() -> FrameTimer {
         FrameTimer {
-            last_time: 0,
             frame_time: 0,
             delta: 0.0,
             start: 0,
