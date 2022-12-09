@@ -70,9 +70,10 @@ fn main() {
         .event_pump()
         .expect("Could not create sdl event pump");
 
+    let dpi = egui_sdl2_event::get_dpi(&window, &video_subsystem);
 
     let mut egui_sdl2_state =
-        EguiSDL2State::new(&window);
+        EguiSDL2State::new(dpi);
     let mut egui_skia = EguiSkia::new();
 
     let mut demo_ui = egui_demo_lib::DemoWindows::default();

@@ -1,7 +1,6 @@
 extern crate gl;
 extern crate sdl2;
 
-use cocoa::appkit::GLint;
 use egui_sdl2_event::EguiSDL2State;
 use sdl2::event::{Event, WindowEvent};
 use sdl2::keyboard::Keycode;
@@ -44,7 +43,7 @@ fn main() {
     let mut gr_context = skia_safe::gpu::DirectContext::new_gl(None, None).unwrap();
 
     let fb_info = {
-        let mut fboid: GLint = 0;
+        let mut fboid = 0;
         unsafe { gl::GetIntegerv(gl::FRAMEBUFFER_BINDING, &mut fboid) };
 
         FramebufferInfo {
@@ -75,7 +74,9 @@ fn main() {
 
     let mut surface = create_surface(&window, &fb_info, &mut gr_context);
 
-    let mut egui_sdl2_state = EguiSDL2State::new(&window);
+    let dpi = egui_sdl2_event::get_dpi(&window, &video_subsystem);
+
+    let mut egui_sdl2_state = EguiSDL2State::new(dpi);
     let mut egui_skia = EguiSkia::new();
 
     let mut demo_ui = egui_demo_lib::DemoWindows::default();
