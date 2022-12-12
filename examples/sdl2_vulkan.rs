@@ -3,9 +3,12 @@
 use egui_sdl2_event::EguiSDL2State;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
+use skia_safe::Color;
+use skulpin::{LogicalSize, RendererBuilder};
 use skulpin::rafx::api::RafxExtents2D;
 use skulpin::skia_safe;
-use skulpin::{LogicalSize, RendererBuilder};
+
+use egui_skia::EguiSkia;
 
 fn main() {
     // Setup SDL
@@ -32,6 +35,7 @@ fn main() {
     let window = video_subsystem
         .window("Skulpin", logical_size.width, logical_size.height)
         .position_centered()
+        .allow_highdpi()
         .resizable()
         .build()
         .expect("Failed to create window");
@@ -66,30 +70,15 @@ fn main() {
         .event_pump()
         .expect("Could not create sdl event pump");
 
-    let dpi_scale = video_subsystem
-        .display_dpi(window.display_index().unwrap())
-        .unwrap()
-        .0;
-    let dpi_scale = dpi_scale / 72.0;
-
-    println!("DPI: {}", dpi_scale);
+    let dpi = egui_sdl2_event::get_dpi(&window, &video_subsystem);
 
     let mut egui_sdl2_state =
-        EguiSDL2State::new(window.drawable_size().0, window.drawable_size().1, 1.0);
+        EguiSDL2State::new(dpi);
     let mut egui_skia = EguiSkia::new();
 
     let mut demo_ui = egui_demo_lib::DemoWindows::default();
 
-    let mut frame_timer = FrameTimer::new();
-    let mut running_time: f64 = 0.0;
-
     'running: loop {
-        frame_timer.time_start();
-        let delta = frame_timer.delta();
-        running_time += delta as f64;
-
-        egui_sdl2_state.update_time(Some(running_time), delta);
-
         for event in event_pump.poll_iter() {
             match &event {
                 Event::Quit { .. }
@@ -104,7 +93,7 @@ fn main() {
             egui_sdl2_state.sdl2_input_to_egui(&window, &event)
         }
 
-        let (_duration, full_output) = egui_skia.run(egui_sdl2_state.raw_input.take(), |ctx| {
+        let (_duration, full_output) = egui_skia.run(egui_sdl2_state.take_egui_input(&window), |ctx| {
             demo_ui.ui(ctx);
         });
         egui_sdl2_state.process_output(&window, &full_output);
@@ -121,51 +110,5 @@ fn main() {
             })
             .unwrap();
 
-        frame_timer.time_stop();
-    }
-}
-
-use egui_skia::EguiSkia;
-use sdl2::sys::Uint32;
-use skia_safe::Color;
-
-pub struct FrameTimer {
-    last_time: u32,
-    frame_time: u32,
-    delta: f32,
-    start: u32,
-    stop: u32,
-}
-
-pub const MS_TO_SECONDS: f32 = 1.0 / 1000.0;
-impl FrameTimer {
-    pub fn new() -> FrameTimer {
-        FrameTimer {
-            last_time: 0,
-            frame_time: 0,
-            delta: 0.0,
-            start: 0,
-            stop: 0,
-        }
-    }
-
-    fn time_now(&self) -> Uint32 {
-        #[allow(unsafe_code)]
-        unsafe {
-            sdl2::sys::SDL_GetTicks()
-        }
-    }
-
-    pub fn time_start(&mut self) {
-        self.frame_time = self.stop - self.start;
-        self.delta = self.frame_time as f32 * MS_TO_SECONDS;
-        self.start = self.time_now();
-    }
-    pub fn time_stop(&mut self) {
-        self.stop = self.time_now();
-    }
-
-    pub fn delta(&self) -> f32 {
-        self.delta
     }
 }

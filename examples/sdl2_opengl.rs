@@ -29,6 +29,7 @@ fn main() {
         .window("Window", 800, 600)
         .opengl()
         .resizable()
+        .allow_highdpi()
         .build()
         .unwrap();
 
@@ -56,7 +57,7 @@ fn main() {
         fb_info: &FramebufferInfo,
         gr_context: &mut skia_safe::gpu::DirectContext,
     ) -> skia_safe::Surface {
-        let (width, height) = window.size();
+        let (width, height) = window.drawable_size();
 
         let backend_render_target =
             BackendRenderTarget::new_gl((width as i32, height as i32), 0, 8, *fb_info);
@@ -73,20 +74,14 @@ fn main() {
 
     let mut surface = create_surface(&window, &fb_info, &mut gr_context);
 
-    let mut egui_sdl2_state = EguiSDL2State::new(window.size().0, window.size().1, 1.0);
+    let dpi = egui_sdl2_event::get_dpi(&window, &video_subsystem);
+
+    let mut egui_sdl2_state = EguiSDL2State::new(dpi);
     let mut egui_skia = EguiSkia::new();
 
     let mut demo_ui = egui_demo_lib::DemoWindows::default();
 
-    let mut frame_timer = FrameTimer::new();
-    let mut running_time: f64 = 0.0;
-
     'running: loop {
-        frame_timer.time_start();
-        let delta = frame_timer.delta();
-        running_time += delta as f64;
-
-        egui_sdl2_state.update_time(Some(running_time), delta);
 
         for event in event_pump.poll_iter() {
             match &event {
@@ -113,7 +108,7 @@ fn main() {
             egui_sdl2_state.sdl2_input_to_egui(&window, &event)
         }
 
-        let (_duration, full_output) = egui_skia.run(egui_sdl2_state.raw_input.take(), |ctx| {
+        let (_duration, full_output) = egui_skia.run(egui_sdl2_state.take_egui_input(&window), |ctx| {
             demo_ui.ui(ctx);
         });
         egui_sdl2_state.process_output(&window, &full_output);
@@ -123,49 +118,5 @@ fn main() {
         egui_skia.paint(canvas);
         surface.flush();
         window.gl_swap_window();
-
-        frame_timer.time_stop();
-    }
-}
-
-pub struct FrameTimer {
-    last_time: u32,
-    frame_time: u32,
-    delta: f32,
-    start: u32,
-    stop: u32,
-}
-
-pub const MS_TO_SECONDS: f32 = 1.0 / 1000.0;
-
-impl FrameTimer {
-    pub fn new() -> FrameTimer {
-        FrameTimer {
-            last_time: 0,
-            frame_time: 0,
-            delta: 0.0,
-            start: 0,
-            stop: 0,
-        }
-    }
-
-    fn time_now(&self) -> Uint32 {
-        #[allow(unsafe_code)]
-        unsafe {
-            sdl2::sys::SDL_GetTicks()
-        }
-    }
-
-    pub fn time_start(&mut self) {
-        self.frame_time = self.stop - self.start;
-        self.delta = self.frame_time as f32 * MS_TO_SECONDS;
-        self.start = self.time_now();
-    }
-    pub fn time_stop(&mut self) {
-        self.stop = self.time_now();
-    }
-
-    pub fn delta(&self) -> f32 {
-        self.delta
     }
 }
