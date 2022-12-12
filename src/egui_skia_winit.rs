@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use egui::Context;
 pub use egui_winit;
+use egui_winit::EventResponse;
 use egui_winit::winit::event_loop::EventLoopWindowTarget;
 use egui_winit::winit::window::Window;
 use skia_safe::Canvas;
@@ -29,7 +30,7 @@ impl EguiSkiaWinit {
     /// and only when this returns `false` pass on the events to your game.
     ///
     /// Note that egui uses `tab` to move focus between elements, so this will always return `true` for tabs.
-    pub fn on_event(&mut self, event: &egui_winit::winit::event::WindowEvent<'_>) -> bool {
+    pub fn on_event(&mut self, event: &egui_winit::winit::event::WindowEvent<'_>) -> EventResponse {
         self.egui_winit.on_event(&self.egui_skia.egui_ctx, event)
     }
 

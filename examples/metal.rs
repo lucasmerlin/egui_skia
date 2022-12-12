@@ -89,7 +89,6 @@ fn main() {
                             ui.allocate_exact_size(egui::Vec2::splat(300.0), egui::Sense::drag());
                         egui_ctx.request_repaint();
                         let si = (frame as f32 / 120.0).sin();
-                        let frame = frame.clone();
 
                         ui.painter().add(egui::PaintCallback {
                             rect: rect.clone(),
@@ -137,7 +136,7 @@ fn main() {
             match event {
                 Event::WindowEvent { event, .. } => {
                     // Update Egui integration so the UI works!
-                    let _pass_events_to_game = !gui.on_event(&event);
+                    let _pass_events_to_game = !gui.on_event(&event).consumed;
                     match event {
                         WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
                             metal_layer.set_drawable_size(CGSize::new(

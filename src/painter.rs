@@ -68,7 +68,7 @@ impl Painter {
                 )
                 .unwrap(),
                 ImageData::Font(font) => {
-                    let pixels = font.srgba_pixels(1.0);
+                    let pixels = font.srgba_pixels(Some(1.0));
                     Image::from_raster_data(
                         &ImageInfo::new_n32_premul(
                             skia_safe::ISize::new(font.width() as i32, font.height() as i32),
@@ -121,12 +121,23 @@ impl Painter {
 
             let local_matrix =
                 skia_safe::Matrix::scale((1.0 / image.width() as f32, 1.0 / image.height() as f32));
-            let filter_mode = match image_delta.filter {
-                TextureFilter::Nearest => skia_safe::FilterMode::Nearest,
-                TextureFilter::Linear => skia_safe::FilterMode::Linear,
+
+            #[cfg(feature = "cpu_fix")]
+            let sampling_options = skia_safe::SamplingOptions::new(skia_safe::FilterMode::Nearest, skia_safe::MipmapMode::None);
+            #[cfg(not(feature = "cpu_fix"))]
+            let sampling_options = {
+                let filter_mode = match image_delta.options.magnification {
+                    TextureFilter::Nearest => skia_safe::FilterMode::Nearest,
+                    TextureFilter::Linear => skia_safe::FilterMode::Linear,
+                };
+                let mm_mode = match image_delta.options.minification {
+                    TextureFilter::Nearest => {skia_safe::MipmapMode::Nearest}
+                    TextureFilter::Linear => {skia_safe::MipmapMode::Linear}
+                };
+                let sampling_options =
+                    skia_safe::SamplingOptions::new(filter_mode, mm_mode);
+                sampling_options
             };
-            let sampling_options =
-                skia_safe::SamplingOptions::new(filter_mode, skia_safe::MipmapMode::None);
             let tile_mode = skia_safe::TileMode::Clamp;
 
             let font_shader = image

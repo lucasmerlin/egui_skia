@@ -18,26 +18,28 @@ cpu_fix = []
 gl = ["skia-safe/gl"]
 vulkan = ["skia-safe/vulkan", "skulpin"]
 
+metal = ["skia-safe/metal"]
+
 [profile.dev]
 opt-level = 3
 
 [dependencies]
 
-egui = "0.19"
+egui = ">=0.20"
 skia-safe = { version = ">= 0.53", features = [] }
-egui-winit = { version = "0.19", optional = true, default-features = false }
+egui-winit = { version = ">=0.20", optional = true, default-features = false }
 
-skulpin = { git = "https://github.com/aclysma/skulpin", features = [], optional = true}
+skulpin = { version = ">=0.14.1", features = [], optional = true}
 
 [dev-dependencies]
 softbuffer = { git = "https://github.com/john01dav/softbuffer" }
-egui_demo_lib = "0.19"
+egui_demo_lib = ">=0.20"
 raw-window-handle = "0.5"
 foreign-types-shared = "0.1.1"
 
 sdl2 = { version = "0.35.2", features = ["raw-window-handle"] }
 gl = "0.14.0"
-egui-sdl2-event = { git = "https://github.com/lucasmerlin/egui-sdl2-event" }
+egui-sdl2-event = { version = "0.3.0", package = "egui-skia-sdl2-event" }
 
 [target.'cfg(target_os = "macos")'.dev-dependencies]
 metal = "0.24"
