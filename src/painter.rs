@@ -194,7 +194,15 @@ impl Painter {
                         let mut colors = Vec::with_capacity(mesh.vertices.len());
 
                         mesh.vertices.iter().enumerate().for_each(|(_i, v)| {
-                            pos.push(Point::new(v.pos.x, v.pos.y));
+                            // Apparently vertices can be NaN and if they are NaN, nothing is rendered.
+                            // Replacing them with 0 works around this.
+                            let fixed_pos = if v.pos.x.is_nan() || v.pos.y.is_nan() {
+                                Pos2::new(0.0, 0.0)
+                            } else {
+                                v.pos
+                            };
+
+                            pos.push(Point::new(fixed_pos.x, fixed_pos.y));
                             texs.push(Point::new(v.uv.x, v.uv.y));
                             colors.push(Color::from_argb(
                                 v.color.a(),
