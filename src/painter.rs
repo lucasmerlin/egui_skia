@@ -196,6 +196,7 @@ impl Painter {
                         mesh.vertices.iter().enumerate().for_each(|(_i, v)| {
                             // Apparently vertices can be NaN and if they are NaN, nothing is rendered.
                             // Replacing them with 0 works around this.
+                            // https://github.com/lucasmerlin/egui_skia/issues/4
                             let fixed_pos = if v.pos.x.is_nan() || v.pos.y.is_nan() {
                                 Pos2::new(0.0, 0.0)
                             } else {
