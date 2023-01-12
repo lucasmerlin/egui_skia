@@ -2,9 +2,9 @@ use std::time::Duration;
 
 use egui::Context;
 pub use egui_winit;
-use egui_winit::EventResponse;
 use egui_winit::winit::event_loop::EventLoopWindowTarget;
 use egui_winit::winit::window::Window;
+use egui_winit::EventResponse;
 use skia_safe::Canvas;
 
 use crate::EguiSkia;

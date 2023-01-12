@@ -4,9 +4,9 @@ use egui_sdl2_event::EguiSDL2State;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use skia_safe::Color;
-use skulpin::{LogicalSize, RendererBuilder};
 use skulpin::rafx::api::RafxExtents2D;
 use skulpin::skia_safe;
+use skulpin::{LogicalSize, RendererBuilder};
 
 use egui_skia::EguiSkia;
 
@@ -72,8 +72,7 @@ fn main() {
 
     let dpi = egui_sdl2_event::get_dpi(&window, &video_subsystem);
 
-    let mut egui_sdl2_state =
-        EguiSDL2State::new(dpi);
+    let mut egui_sdl2_state = EguiSDL2State::new(dpi);
     let mut egui_skia = EguiSkia::new();
 
     let mut demo_ui = egui_demo_lib::DemoWindows::default();
@@ -93,9 +92,10 @@ fn main() {
             egui_sdl2_state.sdl2_input_to_egui(&window, &event)
         }
 
-        let (_duration, full_output) = egui_skia.run(egui_sdl2_state.take_egui_input(&window), |ctx| {
-            demo_ui.ui(ctx);
-        });
+        let (_duration, full_output) =
+            egui_skia.run(egui_sdl2_state.take_egui_input(&window), |ctx| {
+                demo_ui.ui(ctx);
+            });
         egui_sdl2_state.process_output(&window, &full_output);
 
         let (window_width, window_height) = window.vulkan_drawable_size();
@@ -109,6 +109,5 @@ fn main() {
                 egui_skia.paint(canvas);
             })
             .unwrap();
-
     }
 }

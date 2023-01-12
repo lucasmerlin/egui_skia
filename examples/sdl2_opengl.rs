@@ -82,7 +82,6 @@ fn main() {
     let mut demo_ui = egui_demo_lib::DemoWindows::default();
 
     'running: loop {
-
         for event in event_pump.poll_iter() {
             match &event {
                 Event::Quit { .. }
@@ -108,9 +107,10 @@ fn main() {
             egui_sdl2_state.sdl2_input_to_egui(&window, &event)
         }
 
-        let (_duration, full_output) = egui_skia.run(egui_sdl2_state.take_egui_input(&window), |ctx| {
-            demo_ui.ui(ctx);
-        });
+        let (_duration, full_output) =
+            egui_skia.run(egui_sdl2_state.take_egui_input(&window), |ctx| {
+                demo_ui.ui(ctx);
+            });
         egui_sdl2_state.process_output(&window, &full_output);
 
         let canvas = surface.canvas();

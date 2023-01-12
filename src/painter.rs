@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use egui::epaint::ahash::AHashMap;
 use egui::epaint::{Mesh16, Primitive};
-use egui::{ClippedPrimitive, ImageData, TextureFilter, TextureId, TexturesDelta};
+use egui::{ClippedPrimitive, ImageData, Pos2, TextureFilter, TextureId, TexturesDelta};
 use skia_safe::vertices::VertexMode;
 use skia_safe::wrapper::ValueWrapper;
 use skia_safe::{
@@ -123,7 +123,10 @@ impl Painter {
                 skia_safe::Matrix::scale((1.0 / image.width() as f32, 1.0 / image.height() as f32));
 
             #[cfg(feature = "cpu_fix")]
-            let sampling_options = skia_safe::SamplingOptions::new(skia_safe::FilterMode::Nearest, skia_safe::MipmapMode::None);
+            let sampling_options = skia_safe::SamplingOptions::new(
+                skia_safe::FilterMode::Nearest,
+                skia_safe::MipmapMode::None,
+            );
             #[cfg(not(feature = "cpu_fix"))]
             let sampling_options = {
                 let filter_mode = match image_delta.options.magnification {
@@ -131,11 +134,10 @@ impl Painter {
                     TextureFilter::Linear => skia_safe::FilterMode::Linear,
                 };
                 let mm_mode = match image_delta.options.minification {
-                    TextureFilter::Nearest => {skia_safe::MipmapMode::Nearest}
-                    TextureFilter::Linear => {skia_safe::MipmapMode::Linear}
+                    TextureFilter::Nearest => skia_safe::MipmapMode::Nearest,
+                    TextureFilter::Linear => skia_safe::MipmapMode::Linear,
                 };
-                let sampling_options =
-                    skia_safe::SamplingOptions::new(filter_mode, mm_mode);
+                let sampling_options = skia_safe::SamplingOptions::new(filter_mode, mm_mode);
                 sampling_options
             };
             let tile_mode = skia_safe::TileMode::Clamp;
