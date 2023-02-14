@@ -2,10 +2,11 @@ use std::ops::Deref;
 use std::sync::Arc;
 
 use egui::epaint::ahash::AHashMap;
-use egui::epaint::{Mesh16, Primitive};
-use egui::{ClippedPrimitive, ImageData, Pos2, TextureFilter, TextureId, TexturesDelta};
+#[cfg(feature = "cpu_fix")]
+use egui::epaint::Mesh16;
+use egui::epaint::Primitive;
+use egui::{ClippedPrimitive, ImageData, Pos2, TextureId, TexturesDelta};
 use skia_safe::vertices::VertexMode;
-use skia_safe::wrapper::ValueWrapper;
 use skia_safe::{
     scalar, BlendMode, Canvas, ClipOp, Color, ConditionallySend, Data, Drawable, Image, ImageInfo,
     Paint, PictureRecorder, Point, Rect, Sendable, Surface, Vertices,
@@ -89,7 +90,7 @@ impl Painter {
             let image = match image_delta.pos {
                 None => delta_image,
                 Some(pos) => {
-                    let old_image = self.paints.remove(&id).unwrap().image;
+                    let old_image = self.paints.remove(id).unwrap().image;
 
                     let mut surface = Surface::new_raster_n32_premul(skia_safe::ISize::new(
                         old_image.width() as i32,
@@ -129,6 +130,7 @@ impl Painter {
             );
             #[cfg(not(feature = "cpu_fix"))]
             let sampling_options = {
+                use egui::TextureFilter;
                 let filter_mode = match image_delta.options.magnification {
                     TextureFilter::Nearest => skia_safe::FilterMode::Nearest,
                     TextureFilter::Linear => skia_safe::FilterMode::Linear,
@@ -355,6 +357,12 @@ impl Painter {
         }
 
         meshes
+    }
+}
+
+impl Default for Painter {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
