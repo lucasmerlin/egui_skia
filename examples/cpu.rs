@@ -1,12 +1,10 @@
-use std::sync::Arc;
-
-use egui::{Context, ScrollArea};
-use skia_safe::{Paint, Point, Surface};
-
-use egui_skia::EguiSkiaPaintCallback;
+#[cfg(feature = "winit")]
+use egui::Context;
 
 #[cfg(feature = "winit")]
 fn run_software(mut ui: impl FnMut(&Context) + 'static) {
+    use skia_safe::{Paint, Surface};
+
     use egui_skia::EguiSkiaWinit;
     use egui_winit::winit::dpi::LogicalSize;
     use egui_winit::winit::event::{Event, WindowEvent};
@@ -52,8 +50,10 @@ fn run_software(mut ui: impl FnMut(&Context) + 'static) {
                 gc.window().request_redraw();
             }
             Event::WindowEvent { event, .. } => {
-                egui_skia.on_event(&event);
-                gc.window().request_redraw();
+                let response = egui_skia.on_event(&event);
+                if response.repaint {
+                    gc.window().request_redraw();
+                }
             }
             Event::RedrawRequested(_) => {
                 let canvas = surface.canvas();
@@ -120,6 +120,12 @@ fn run_software(mut ui: impl FnMut(&Context) + 'static) {
 
 #[cfg(feature = "winit")]
 fn main() {
+    use std::sync::Arc;
+
+    use egui::ScrollArea;
+    use skia_safe::{Paint, Point};
+
+    use egui_skia::EguiSkiaPaintCallback;
     #[cfg(not(feature = "cpu_fix"))]
     eprintln!("Warning! Feature cpu_fix should be enabled when using raster surfaces. See https://github.com/lucasmerlin/egui_skia/issues/1");
 

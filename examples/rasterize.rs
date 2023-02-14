@@ -16,7 +16,7 @@ pub fn main() {
                     let (rect, _) =
                         ui.allocate_exact_size(egui::Vec2::splat(300.0), egui::Sense::drag());
                     ui.painter().add(egui::PaintCallback {
-                        rect: rect.clone(),
+                        rect,
                         callback: std::sync::Arc::new(egui_skia::EguiSkiaPaintCallback::new(
                             move |canvas| {
                                 canvas.draw_circle(

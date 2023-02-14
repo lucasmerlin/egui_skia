@@ -139,8 +139,8 @@ impl Painter {
                     TextureFilter::Nearest => skia_safe::MipmapMode::Nearest,
                     TextureFilter::Linear => skia_safe::MipmapMode::Linear,
                 };
-                let sampling_options = skia_safe::SamplingOptions::new(filter_mode, mm_mode);
-                sampling_options
+
+                skia_safe::SamplingOptions::new(filter_mode, mm_mode)
             };
             let tile_mode = skia_safe::TileMode::Clamp;
 
@@ -155,7 +155,7 @@ impl Painter {
             paint.set_color(Color::WHITE);
 
             self.paints.insert(
-                id.clone(),
+                *id,
                 PaintHandle {
                     paint,
                     image,
@@ -176,7 +176,7 @@ impl Painter {
             );
             match primitive.primitive {
                 Primitive::Mesh(mesh) => {
-                    canvas.set_matrix(&skia_safe::M44::new_identity().set_scale(dpi, dpi, 1.0));
+                    canvas.set_matrix(skia_safe::M44::new_identity().set_scale(dpi, dpi, 1.0));
                     let mut arc = skia_safe::AutoCanvasRestore::guard(canvas, true);
 
                     #[cfg(feature = "cpu_fix")]
@@ -252,7 +252,7 @@ impl Painter {
                             &texs,
                             &colors,
                             Some(
-                                &mesh
+                                mesh
                                     .indices
                                     .iter()
                                     .map(|index| *index as u16)
@@ -339,7 +339,7 @@ impl Painter {
 
         for index in mesh.indices.iter() {
             let vertex = mesh.vertices.get(*index as usize).unwrap();
-            let is_current_zero = (vertex.uv.x == 0.0 && vertex.uv.y == 0.0);
+            let is_current_zero = vertex.uv.x == 0.0 && vertex.uv.y == 0.0;
             if is_current_zero != is_zero.unwrap_or(is_current_zero) {
                 meshes.push(Mesh16 {
                     indices: vec![],
@@ -375,8 +375,8 @@ impl EguiSkiaPaintCallback {
         EguiSkiaPaintCallback {
             callback: Box::new(move |rect| {
                 let mut pr = PictureRecorder::new();
-                let mut canvas = pr.begin_recording(rect, None);
-                callback(&mut canvas);
+                let canvas = pr.begin_recording(rect, None);
+                callback(canvas);
                 SyncSendableDrawable(
                     pr.finish_recording_as_drawable()
                         .unwrap()

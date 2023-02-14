@@ -1,19 +1,17 @@
-use std::sync::Arc;
-
-use egui::ScrollArea;
-use metal::{Device, MTLPixelFormat, MetalLayer};
-use skia_safe::{scalar, Color, ColorType, Font, Paint, PathEffect, Point, Size, Surface};
-
-use egui_skia::{EguiSkiaPaintCallback, EguiSkiaWinit};
-
-#[cfg(feature = "winit")]
+#[cfg(all(feature = "winit", feature = "metal"))]
 fn main() {
+    use std::sync::Arc;
+
+    use egui::ScrollArea;
+    use skia_safe::{Color, ColorType, Font, Paint, PathEffect, Point, scalar, Size, Surface};
+
+    use egui_skia::{EguiSkiaPaintCallback, EguiSkiaWinit};
     use cocoa::{appkit::NSView, base::id as cocoa_id};
 
     use core_graphics_types::geometry::CGSize;
 
     use foreign_types_shared::{ForeignType, ForeignTypeRef};
-    use metal::{Device, MTLPixelFormat, MetalLayer};
+    use metal::{Device, MetalLayer, MTLPixelFormat};
     use objc::{rc::autoreleasepool, runtime::YES};
 
     use egui_winit::winit::{
@@ -23,7 +21,7 @@ fn main() {
         platform::macos::WindowExtMacOS,
         window::WindowBuilder,
     };
-    use skia_safe::gpu::{mtl, BackendRenderTarget, DirectContext, SurfaceOrigin};
+    use skia_safe::gpu::{BackendRenderTarget, DirectContext, mtl, SurfaceOrigin};
 
     let size = LogicalSize::new(800, 600);
 
@@ -78,7 +76,7 @@ fn main() {
         autoreleasepool(|| {
             *control_flow = ControlFlow::Wait;
 
-            let mut quit = false;
+            let quit = false;
             frame += 1;
 
             let repaint_after = gui.run(&window, |egui_ctx| {
@@ -146,7 +144,7 @@ fn main() {
                             window.request_redraw()
                         }
                         WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                        WindowEvent::Resized(mut size) => {
+                        WindowEvent::Resized(size) => {
                             metal_layer.set_drawable_size(CGSize::new(
                                 size.width as f64,
                                 size.height as f64,
@@ -181,7 +179,7 @@ fn main() {
                                 None,
                                 None,
                             )
-                            .unwrap()
+                                .unwrap()
                         };
 
                         let canvas = surface.canvas();
@@ -201,4 +199,9 @@ fn main() {
             }
         });
     });
+}
+
+#[cfg(not(all(feature = "metal", feature = "winit")))]
+fn main() {
+    println!("This example requires the `metal` and `winit` features to be enabled");
 }
