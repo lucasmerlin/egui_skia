@@ -205,11 +205,22 @@ impl Painter {
 
                             pos.push(Point::new(fixed_pos.x, fixed_pos.y));
                             texs.push(Point::new(v.uv.x, v.uv.y));
+
+                            let c = v.color;
+                            let c = Color::from_argb(c.a(), c.r(), c.g(), c.b());
+                            // Un-premultply color
+                            // This fixes some cases of the color-test
+                            // https://github.com/lucasmerlin/egui_skia/issues/6
+                            // there might be a better solution though?
+                            let mut cf = skia_safe::Color4f::from(c);
+                            cf.r /= cf.a;
+                            cf.g /= cf.a;
+                            cf.b /= cf.a;
                             colors.push(Color::from_argb(
-                                v.color.a(),
-                                v.color.r(),
-                                v.color.g(),
-                                v.color.b(),
+                                c.a(),
+                                (cf.r * 255.0) as u8,
+                                (cf.g * 255.0) as u8,
+                                (cf.b * 255.0) as u8,
                             ));
                         });
 
