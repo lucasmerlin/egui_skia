@@ -1,5 +1,7 @@
 // This example shows how to use the renderer with SDL2 directly.
 
+use egui_sdl2_event::DpiMode;
+
 #[cfg(feature = "vulkan")]
 fn main() {
     use egui_sdl2_event::EguiSDL2State;
@@ -69,9 +71,7 @@ fn main() {
         .event_pump()
         .expect("Could not create sdl event pump");
 
-    let dpi = egui_sdl2_event::get_dpi(&window, &video_subsystem);
-
-    let mut egui_sdl2_state = EguiSDL2State::new(dpi);
+    let mut egui_sdl2_state = EguiSDL2State::new(&window, &video_subsystem, DpiMode::Auto);
     let mut egui_skia = EguiSkia::new();
 
     let mut demo_ui = egui_demo_lib::DemoWindows::default();

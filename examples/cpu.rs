@@ -10,7 +10,6 @@ fn run_software(mut ui: impl FnMut(&Context) + 'static) {
     use egui_winit::winit::event::{Event, WindowEvent};
     use egui_winit::winit::event_loop::{ControlFlow, EventLoop};
     use egui_winit::winit::window::WindowBuilder;
-    use softbuffer::GraphicsContext;
 
     let ev_loop = EventLoop::new();
     let window = WindowBuilder::new()
@@ -19,15 +18,18 @@ fn run_software(mut ui: impl FnMut(&Context) + 'static) {
         .build(&ev_loop)
         .unwrap();
 
-    let mut gc = unsafe { GraphicsContext::new(window) }.unwrap();
+    let mut gc = unsafe { softbuffer::Context::new(&window) }.unwrap();
+    let mut softbuffer_surface = unsafe {
+        softbuffer::Surface::new(&gc, &window).unwrap()
+    };
     let mut egui_skia = EguiSkiaWinit::new(&ev_loop);
 
     egui_skia
         .egui_winit
-        .set_pixels_per_point(gc.window().scale_factor() as f32);
+        .set_pixels_per_point(window.scale_factor() as f32);
 
-    let size = gc.window().inner_size();
-    let size = size.to_logical::<i32>(gc.window().scale_factor());
+    let size = window.inner_size();
+    let size = size.to_logical::<i32>(window.scale_factor());
     let mut surface =
         Surface::new_raster_n32_premul((size.width as i32, size.height as i32)).unwrap();
 
@@ -47,22 +49,22 @@ fn run_software(mut ui: impl FnMut(&Context) + 'static) {
             } => {
                 surface = Surface::new_raster_n32_premul((size.width as i32, size.height as i32))
                     .unwrap();
-                gc.window().request_redraw();
+                window.request_redraw();
             }
             Event::WindowEvent { event, .. } => {
                 let response = egui_skia.on_event(&event);
                 if response.repaint {
-                    gc.window().request_redraw();
+                    window.request_redraw();
                 }
             }
             Event::RedrawRequested(_) => {
                 let canvas = surface.canvas();
                 canvas.clear(skia_safe::Color::TRANSPARENT);
 
-                let repaint_after = egui_skia.run(gc.window(), &mut ui);
+                let repaint_after = egui_skia.run(&window, &mut ui);
 
                 *control_flow = if repaint_after.is_zero() {
-                    gc.window().request_redraw();
+                    window.request_redraw();
                     ControlFlow::Poll
                 } else if let Some(repaint_after_instant) =
                     std::time::Instant::now().checked_add(repaint_after)
@@ -75,23 +77,6 @@ fn run_software(mut ui: impl FnMut(&Context) + 'static) {
                 egui_skia.paint(canvas);
 
                 let snapshot = surface.image_snapshot();
-
-                let size = gc
-                    .window()
-                    .inner_size()
-                    .to_logical::<i32>(gc.window().scale_factor());
-
-                let mut small_surface =
-                    Surface::new_raster_n32_premul((size.width, size.height)).unwrap();
-
-                small_surface.canvas().draw_image_rect(
-                    &snapshot,
-                    None,
-                    &skia_safe::Rect::new(0.0, 0.0, size.width as f32, size.height as f32),
-                    &Paint::default(),
-                );
-
-                let snapshot = small_surface.image_snapshot();
 
                 let peek = snapshot.peek_pixels().unwrap();
                 let pixels: &[u32] = peek.pixels().unwrap();
@@ -107,10 +92,10 @@ fn run_software(mut ui: impl FnMut(&Context) + 'static) {
                     })
                     .collect::<Vec<u32>>();
 
-                gc.set_buffer(
+                softbuffer_surface.set_buffer(
                     &transformed,
-                    small_surface.width() as u16,
-                    small_surface.height() as u16,
+                    surface.width() as u16,
+                    surface.height() as u16,
                 );
             }
             _ => {}
