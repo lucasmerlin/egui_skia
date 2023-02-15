@@ -1537,7 +1537,8 @@ checksum = "a507befe795404456341dfab10cef66ead4c041f62b8b11bbb92bffe5d0953e0"
 [[package]]
 name = "softbuffer"
 version = "0.2.0"
-source = "git+https://github.com/john01dav/softbuffer#fec8decc43f3e42b0f1620ee07cee12a92f111fc"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3177eca2c15033e254b9b70c4915150200b1cf6fa777de18be9977ae5850077f"
 dependencies = [
  "bytemuck",
  "cfg_aliases",

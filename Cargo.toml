@@ -32,7 +32,7 @@ egui-winit = { version = ">=0.20", optional = true, default-features = false }
 skulpin = { version = ">=0.14.1", features = [], optional = true}
 
 [dev-dependencies]
-softbuffer = { git = "https://github.com/john01dav/softbuffer" }
+softbuffer = "0.2.0"
 egui_demo_lib = ">=0.20"
 raw-window-handle = "0.5"
 foreign-types-shared = "0.1.1"
