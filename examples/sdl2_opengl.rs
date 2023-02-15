@@ -70,7 +70,7 @@ fn main() {
             None,
             None,
         )
-            .unwrap()
+        .unwrap()
     }
 
     let mut surface = create_surface(&window, &fb_info, &mut gr_context);
@@ -93,8 +93,8 @@ fn main() {
                 Event::Window {
                     window_id,
                     win_event:
-                    WindowEvent::SizeChanged(_width, _height)
-                    | WindowEvent::Resized(_width, _height),
+                        WindowEvent::SizeChanged(_width, _height)
+                        | WindowEvent::Resized(_width, _height),
                     ..
                 } => {
                     if *window_id == window.id() {

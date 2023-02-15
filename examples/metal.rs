@@ -3,15 +3,15 @@ fn main() {
     use std::sync::Arc;
 
     use egui::ScrollArea;
-    use skia_safe::{Color, ColorType, Font, Paint, PathEffect, Point, scalar, Size, Surface};
+    use skia_safe::{scalar, Color, ColorType, Font, Paint, PathEffect, Point, Size, Surface};
 
-    use egui_skia::{EguiSkiaPaintCallback, EguiSkiaWinit};
     use cocoa::{appkit::NSView, base::id as cocoa_id};
+    use egui_skia::{EguiSkiaPaintCallback, EguiSkiaWinit};
 
     use core_graphics_types::geometry::CGSize;
 
     use foreign_types_shared::{ForeignType, ForeignTypeRef};
-    use metal::{Device, MetalLayer, MTLPixelFormat};
+    use metal::{Device, MTLPixelFormat, MetalLayer};
     use objc::{rc::autoreleasepool, runtime::YES};
 
     use egui_winit::winit::{
@@ -21,7 +21,7 @@ fn main() {
         platform::macos::WindowExtMacOS,
         window::WindowBuilder,
     };
-    use skia_safe::gpu::{BackendRenderTarget, DirectContext, mtl, SurfaceOrigin};
+    use skia_safe::gpu::{mtl, BackendRenderTarget, DirectContext, SurfaceOrigin};
 
     let size = LogicalSize::new(800, 600);
 
@@ -179,7 +179,7 @@ fn main() {
                                 None,
                                 None,
                             )
-                                .unwrap()
+                            .unwrap()
                         };
 
                         let canvas = surface.canvas();

@@ -19,9 +19,7 @@ fn run_software(mut ui: impl FnMut(&Context) + 'static) {
         .unwrap();
 
     let mut gc = unsafe { softbuffer::Context::new(&window) }.unwrap();
-    let mut softbuffer_surface = unsafe {
-        softbuffer::Surface::new(&gc, &window).unwrap()
-    };
+    let mut softbuffer_surface = unsafe { softbuffer::Surface::new(&gc, &window).unwrap() };
     let mut egui_skia = EguiSkiaWinit::new(&ev_loop);
 
     egui_skia

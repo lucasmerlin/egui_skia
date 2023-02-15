@@ -252,8 +252,7 @@ impl Painter {
                             &texs,
                             &colors,
                             Some(
-                                mesh
-                                    .indices
+                                mesh.indices
                                     .iter()
                                     .map(|index| *index as u16)
                                     .collect::<Vec<u16>>()
