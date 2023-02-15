@@ -2,10 +2,11 @@ use std::ops::Deref;
 use std::sync::Arc;
 
 use egui::epaint::ahash::AHashMap;
-use egui::epaint::{Mesh16, Primitive};
-use egui::{ClippedPrimitive, ImageData, Pos2, TextureFilter, TextureId, TexturesDelta};
+#[cfg(feature = "cpu_fix")]
+use egui::epaint::Mesh16;
+use egui::epaint::Primitive;
+use egui::{ClippedPrimitive, ImageData, Pos2, TextureId, TexturesDelta};
 use skia_safe::vertices::VertexMode;
-use skia_safe::wrapper::ValueWrapper;
 use skia_safe::{
     scalar, BlendMode, Canvas, ClipOp, Color, ConditionallySend, Data, Drawable, Image, ImageInfo,
     Paint, PictureRecorder, Point, Rect, Sendable, Surface, Vertices,
@@ -89,7 +90,7 @@ impl Painter {
             let image = match image_delta.pos {
                 None => delta_image,
                 Some(pos) => {
-                    let old_image = self.paints.remove(&id).unwrap().image;
+                    let old_image = self.paints.remove(id).unwrap().image;
 
                     let mut surface = Surface::new_raster_n32_premul(skia_safe::ISize::new(
                         old_image.width() as i32,
@@ -129,6 +130,7 @@ impl Painter {
             );
             #[cfg(not(feature = "cpu_fix"))]
             let sampling_options = {
+                use egui::TextureFilter;
                 let filter_mode = match image_delta.options.magnification {
                     TextureFilter::Nearest => skia_safe::FilterMode::Nearest,
                     TextureFilter::Linear => skia_safe::FilterMode::Linear,
@@ -137,8 +139,8 @@ impl Painter {
                     TextureFilter::Nearest => skia_safe::MipmapMode::Nearest,
                     TextureFilter::Linear => skia_safe::MipmapMode::Linear,
                 };
-                let sampling_options = skia_safe::SamplingOptions::new(filter_mode, mm_mode);
-                sampling_options
+
+                skia_safe::SamplingOptions::new(filter_mode, mm_mode)
             };
             let tile_mode = skia_safe::TileMode::Clamp;
 
@@ -153,7 +155,7 @@ impl Painter {
             paint.set_color(Color::WHITE);
 
             self.paints.insert(
-                id.clone(),
+                *id,
                 PaintHandle {
                     paint,
                     image,
@@ -174,7 +176,7 @@ impl Painter {
             );
             match primitive.primitive {
                 Primitive::Mesh(mesh) => {
-                    canvas.set_matrix(&skia_safe::M44::new_identity().set_scale(dpi, dpi, 1.0));
+                    canvas.set_matrix(skia_safe::M44::new_identity().set_scale(dpi, dpi, 1.0));
                     let mut arc = skia_safe::AutoCanvasRestore::guard(canvas, true);
 
                     #[cfg(feature = "cpu_fix")]
@@ -205,11 +207,22 @@ impl Painter {
 
                             pos.push(Point::new(fixed_pos.x, fixed_pos.y));
                             texs.push(Point::new(v.uv.x, v.uv.y));
+
+                            let c = v.color;
+                            let c = Color::from_argb(c.a(), c.r(), c.g(), c.b());
+                            // Un-premultply color
+                            // This fixes some cases of the color-test
+                            // https://github.com/lucasmerlin/egui_skia/issues/6
+                            // there might be a better solution though?
+                            let mut cf = skia_safe::Color4f::from(c);
+                            cf.r /= cf.a;
+                            cf.g /= cf.a;
+                            cf.b /= cf.a;
                             colors.push(Color::from_argb(
-                                v.color.a(),
-                                v.color.r(),
-                                v.color.g(),
-                                v.color.b(),
+                                c.a(),
+                                (cf.r * 255.0) as u8,
+                                (cf.g * 255.0) as u8,
+                                (cf.b * 255.0) as u8,
                             ));
                         });
 
@@ -239,7 +252,7 @@ impl Painter {
                             &texs,
                             &colors,
                             Some(
-                                &mesh
+                                mesh
                                     .indices
                                     .iter()
                                     .map(|index| *index as u16)
@@ -326,7 +339,7 @@ impl Painter {
 
         for index in mesh.indices.iter() {
             let vertex = mesh.vertices.get(*index as usize).unwrap();
-            let is_current_zero = (vertex.uv.x == 0.0 && vertex.uv.y == 0.0);
+            let is_current_zero = vertex.uv.x == 0.0 && vertex.uv.y == 0.0;
             if is_current_zero != is_zero.unwrap_or(is_current_zero) {
                 meshes.push(Mesh16 {
                     indices: vec![],
@@ -347,6 +360,12 @@ impl Painter {
     }
 }
 
+impl Default for Painter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub struct EguiSkiaPaintCallback {
     callback: Box<dyn Fn(Rect) -> SyncSendableDrawable + Send + Sync>,
 }
@@ -356,8 +375,8 @@ impl EguiSkiaPaintCallback {
         EguiSkiaPaintCallback {
             callback: Box::new(move |rect| {
                 let mut pr = PictureRecorder::new();
-                let mut canvas = pr.begin_recording(rect, None);
-                callback(&mut canvas);
+                let canvas = pr.begin_recording(rect, None);
+                callback(canvas);
                 SyncSendableDrawable(
                     pr.finish_recording_as_drawable()
                         .unwrap()

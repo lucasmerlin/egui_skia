@@ -9,7 +9,7 @@ Have a look at the metal or cpu examples to get started.
 ## Run the examples
 
 ```bash
-cargo run --example metal --features winit,skia-safe/metal
+cargo run --example metal --features winit,metal
 cargo run --example cpu --features winit,cpu_fix
 cargo run --example rasterize --features winit,cpu_fix
 

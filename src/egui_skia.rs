@@ -104,3 +104,9 @@ impl EguiSkia {
         );
     }
 }
+
+impl Default for EguiSkia {
+    fn default() -> Self {
+        Self::new()
+    }
+}

@@ -1,16 +1,15 @@
 // This example shows how to use the renderer with SDL2 directly.
 
-use egui_sdl2_event::EguiSDL2State;
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-use skia_safe::Color;
-use skulpin::rafx::api::RafxExtents2D;
-use skulpin::skia_safe;
-use skulpin::{LogicalSize, RendererBuilder};
-
-use egui_skia::EguiSkia;
-
+#[cfg(feature = "vulkan")]
 fn main() {
+    use egui_sdl2_event::EguiSDL2State;
+    use sdl2::event::Event;
+    use sdl2::keyboard::Keycode;
+    use skia_safe::Color;
+    use skulpin::rafx::api::RafxExtents2D;
+    use skulpin::{LogicalSize, RendererBuilder};
+
+    use egui_skia::EguiSkia;
     // Setup SDL
     let sdl_context = sdl2::init().expect("Failed to initialize sdl2");
     let video_subsystem = sdl_context
@@ -24,8 +23,8 @@ fn main() {
         width: 900,
         height: 600,
     };
-    let scale_to_fit = skulpin::skia_safe::matrix::ScaleToFit::Center;
-    let visible_range = skulpin::skia_safe::Rect {
+    let scale_to_fit = skia_safe::matrix::ScaleToFit::Center;
+    let visible_range = skia_safe::Rect {
         left: 0.0,
         right: logical_size.width as f32,
         top: 0.0,
@@ -110,4 +109,9 @@ fn main() {
             })
             .unwrap();
     }
+}
+
+#[cfg(not(feature = "vulkan"))]
+fn main() {
+    println!("This example requires the 'vulkan' feature to be enabled");
 }
