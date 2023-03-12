@@ -36,12 +36,20 @@ fn main() {
 
     // Unlike the other example above, nobody created a context for your window, so you need to create one.
     let _ctx = window.gl_create_context().unwrap();
-    gl::load_with(|name| video_subsystem.gl_get_proc_address(name) as *const _);
 
     debug_assert_eq!(gl_attr.context_profile(), GLProfile::Core);
     debug_assert_eq!(gl_attr.context_version(), (3, 3));
+    gl::load_with(|name| video_subsystem.gl_get_proc_address(name) as *const _);
 
-    let mut gr_context = skia_safe::gpu::DirectContext::new_gl(None, None).unwrap();
+    let interface = skia_safe::gpu::gl::Interface::new_load_with(|name| {
+        if name == "eglGetCurrentDisplay" {
+            return std::ptr::null();
+        }
+        video_subsystem.gl_get_proc_address(name) as *const _
+    })
+    .expect("Could not create interface");
+
+    let mut gr_context = skia_safe::gpu::DirectContext::new_gl(Some(interface), None).unwrap();
 
     let fb_info = {
         let mut fboid = 0;
