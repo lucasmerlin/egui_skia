@@ -2,3 +2,5 @@
 /.idea
 /egui_skia.iml
 /output.png
+
+.DS_Store
