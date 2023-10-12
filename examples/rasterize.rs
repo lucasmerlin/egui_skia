@@ -1,4 +1,4 @@
-use egui_skia::rasterize;
+use egui_skia::{rasterize, RasterizeOptions};
 use skia_safe::{EncodedImageFormat, Paint, Point};
 use std::fs::File;
 use std::io::Write;
@@ -30,7 +30,10 @@ pub fn main() {
                 });
             });
         },
-        None,
+        Some(RasterizeOptions {
+            pixels_per_point: 1.0,
+            frames_before_screenshot: 2
+        }),
     );
 
     let data = surface

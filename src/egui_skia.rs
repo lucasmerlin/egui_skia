@@ -1,16 +1,22 @@
-use crate::painter::Painter;
+use std::time::Duration;
+
 use egui::{Context, Pos2};
 use skia_safe::{Canvas, Surface};
-use std::time::Duration;
+
+use crate::painter::Painter;
 
 pub struct RasterizeOptions {
     pub pixels_per_point: f32,
+    /// The number of frames to render before a screenshot is taken.
+    /// Default is 2, so egui will be able to display windows
+    pub frames_before_screenshot: usize,
 }
 
 impl Default for RasterizeOptions {
     fn default() -> Self {
         Self {
             pixels_per_point: 1.0,
+            frames_before_screenshot: 2,
         }
     }
 }
@@ -27,10 +33,13 @@ pub fn rasterize(
 
 pub fn draw_onto_surface(
     surface: &mut Surface,
-    ui: impl FnMut(&Context),
+    mut ui: impl FnMut(&Context),
     options: Option<RasterizeOptions>,
 ) {
-    let RasterizeOptions { pixels_per_point } = options.unwrap_or_default();
+    let RasterizeOptions {
+        pixels_per_point,
+        frames_before_screenshot,
+    } = options.unwrap_or_default();
     let mut backend = EguiSkia::new();
 
     let input = egui::RawInput {
@@ -45,8 +54,9 @@ pub fn draw_onto_surface(
         ..Default::default()
     };
 
-    backend.run(input, ui);
-
+    for _ in 0..frames_before_screenshot {
+        backend.run(input.clone(), &mut ui);
+    }
     backend.paint(surface.canvas());
 }
 
