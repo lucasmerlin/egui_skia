@@ -1,5 +1,3 @@
-use egui_sdl2_event::DpiMode;
-
 /// This is a mix of the rust-sdl2 opengl example,
 /// the skia-safe gl window example: https://github.com/rust-skia/rust-skia/blob/master/skia-safe/examples/gl-window/main.rs
 /// and the egui-sdl2-event example: https://github.com/kaphula/egui-sdl2-event-example
@@ -8,6 +6,7 @@ fn main() {
     extern crate gl;
     extern crate sdl2;
 
+    use egui_sdl2_event::DpiMode;
     use egui_sdl2_event::EguiSDL2State;
     use sdl2::event::{Event, WindowEvent};
     use sdl2::keyboard::Keycode;
