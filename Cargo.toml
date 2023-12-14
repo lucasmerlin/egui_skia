@@ -1,6 +1,6 @@
 [package]
 name = "egui_skia"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 description = "egui_skia is a skia integration for the egui ui library. Render egui within a skia application or render skia in a egui application."
 license = "MIT"
@@ -26,14 +26,14 @@ opt-level = 3
 [dependencies]
 
 egui = "0.24"
-skia-safe = { version = ">=0.53", features = [] }
-egui-winit = { version = ">=0.20", optional = true, default-features = false }
+skia-safe = { version = "0.69", features = [] }
+egui-winit = { version = "0.24", optional = true, default-features = false }
 
-skulpin = { version = ">=0.14.1", features = [], optional = true}
+skulpin = { version = "0.14.1", features = [], optional = true}
 
 [dev-dependencies]
 softbuffer = { git = "https://github.com/john01dav/softbuffer" }
-egui_demo_lib = ">=0.20"
+egui_demo_lib = "0.24"
 raw-window-handle = "0.5"
 foreign-types-shared = "0.1.1"
 
