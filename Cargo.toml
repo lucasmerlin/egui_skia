@@ -25,9 +25,9 @@ opt-level = 3
 
 [dependencies]
 
-egui = "0.24"
+egui = ">=0.24, <0.26"
 skia-safe = { version = "0.69", features = [] }
-egui-winit = { version = "0.24", optional = true, default-features = false }
+egui-winit = { version = "0.25", optional = true, default-features = false }
 
 skulpin = { version = "0.14.1", features = [], optional = true}
 
