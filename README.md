@@ -2,6 +2,10 @@
 
 This is a drawing backend for [egui](https://github.com/emilk/egui) that uses [skia-safe](https://crates.io/crates/skia-safe).
 
+## State of egui_skia
+
+It works well but is quite outdated. I don't use egui_skia anymore, but I'm happy to review / merge PRs and release new versions (see https://github.com/lucasmerlin/egui_skia/pull/13).
+
 ## Usage
 
 Have a look at the metal or cpu examples to get started.
